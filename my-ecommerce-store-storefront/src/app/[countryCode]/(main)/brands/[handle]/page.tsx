@@ -7,6 +7,7 @@ import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { brands, getBrandByHandle, resolveBrand } from "@lib/data/brands"
 import { getBaseURL } from "@lib/util/env"
+import { buildBrandImageAlt } from "@lib/util/image-alt"
 import { sortByAvailability } from "@lib/util/product-availability"
 import { generateBreadcrumbJsonLd } from "@lib/util/structured-data"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -221,7 +222,10 @@ export default async function BrandPage(props: PageProps) {
             <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-6">
               <Image
                 src={brand.logo}
-                alt={brandName}
+                alt={buildBrandImageAlt({
+                  brandName,
+                  locale: isArabic ? "ar" : "en",
+                })}
                 width={220}
                 height={110}
                 className="max-h-28 max-w-full object-contain"

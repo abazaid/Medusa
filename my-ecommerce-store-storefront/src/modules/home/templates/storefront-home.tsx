@@ -1,5 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 import { Heading, Text } from "@medusajs/ui"
+import { buildBrandImageAlt } from "@lib/util/image-alt"
 import Image from "next/image"
 
 import { brands } from "@lib/data/brands"
@@ -475,7 +476,10 @@ export default function StorefrontHome({
               >
                 <Image
                   src={brand.logo}
-                  alt={activeLocale === "ar" ? brand.nameAr : brand.nameEn}
+                  alt={buildBrandImageAlt({
+                    brandName: activeLocale === "ar" ? brand.nameAr : brand.nameEn,
+                    locale: activeLocale,
+                  })}
                   width={160}
                   height={48}
                   className="mb-3 max-h-12 max-w-full object-contain"

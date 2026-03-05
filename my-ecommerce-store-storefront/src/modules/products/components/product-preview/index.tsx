@@ -2,6 +2,7 @@ import { Text } from "@medusajs/ui"
 import { listProducts } from "@lib/data/products"
 import { getLocale } from "@lib/data/locale-actions"
 import { getProductPrice } from "@lib/util/get-product-price"
+import { buildProductImageAlt } from "@lib/util/image-alt"
 import { isProductInStock } from "@lib/util/product-availability"
 import { getProductSlug } from "@lib/util/slug"
 import { HttpTypes } from "@medusajs/types"
@@ -34,6 +35,11 @@ export default async function ProductPreview({
   const productSlug = getProductSlug(product, locale)
   const inStock = isProductInStock(product)
   const outOfStockLabel = locale.toLowerCase() === "ar" ? "نفد المخزون" : "Out of stock"
+  const imageAlt = buildProductImageAlt({
+    productTitle: product.title || "",
+    context: locale.toLowerCase() === "ar" ? "منتج فيب" : "vape product",
+    locale,
+  })
 
   return (
     <LocalizedClientLink href={`/products/${encodeURIComponent(productSlug)}`} className="group">
@@ -42,6 +48,7 @@ export default async function ProductPreview({
           <Thumbnail
             thumbnail={product.thumbnail}
             images={product.images}
+            alt={imageAlt}
             size="full"
             isFeatured={isFeatured}
           />

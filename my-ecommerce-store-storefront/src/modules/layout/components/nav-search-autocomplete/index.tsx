@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { buildProductImageAlt } from "@lib/util/image-alt"
 import { getProductSlug } from "@lib/util/slug"
 
 type Suggestion = {
@@ -141,7 +142,16 @@ export default function NavSearchAutocomplete({ placeholder }: Props) {
                     {suggestion.thumbnail ? (
                       <img
                         src={suggestion.thumbnail}
-                        alt={suggestion.title}
+                        alt={buildProductImageAlt({
+                          productTitle: suggestion.title,
+                          context:
+                            countryCode.toLowerCase() === "ar"
+                              ? "صورة منتج في نتائج البحث"
+                              : "search suggestion product image",
+                          locale: countryCode,
+                        })}
+                        loading="lazy"
+                        decoding="async"
                         className="h-10 w-10 rounded object-cover"
                       />
                     ) : (

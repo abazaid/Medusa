@@ -4,6 +4,7 @@ import { useDeferredValue, useState } from "react"
 import Image from "next/image"
 
 import type { Brand } from "@lib/data/brands"
+import { buildBrandImageAlt } from "@lib/util/image-alt"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 type BrandsArchiveProps = {
@@ -161,7 +162,10 @@ export default function BrandsArchive({
                     <div className="flex h-24 items-center justify-center rounded-2xl bg-slate-50 p-4">
                       <Image
                         src={brand.logo}
-                        alt={brandName}
+                        alt={buildBrandImageAlt({
+                          brandName,
+                          locale: isArabic ? "ar" : "en",
+                        })}
                         width={160}
                         height={64}
                         className="max-h-16 max-w-full object-contain"

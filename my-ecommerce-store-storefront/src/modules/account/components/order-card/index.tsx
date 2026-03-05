@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import Thumbnail from "@modules/products/components/thumbnail"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { convertToLocale } from "@lib/util/money"
+import { buildProductImageAlt } from "@lib/util/image-alt"
 import { HttpTypes } from "@medusajs/types"
 
 type OrderCardProps = {
@@ -50,7 +51,16 @@ const OrderCard = ({ order }: OrderCardProps) => {
               className="flex flex-col gap-y-2"
               data-testid="order-item"
             >
-              <Thumbnail thumbnail={i.thumbnail} images={[]} size="full" />
+              <Thumbnail
+                thumbnail={i.thumbnail}
+                images={[]}
+                alt={buildProductImageAlt({
+                  productTitle: i.title || "",
+                  context: "order item image",
+                  locale: "en",
+                })}
+                size="full"
+              />
               <div className="flex items-center text-small-regular text-ui-fg-base">
                 <span
                   className="text-ui-fg-base font-semibold"

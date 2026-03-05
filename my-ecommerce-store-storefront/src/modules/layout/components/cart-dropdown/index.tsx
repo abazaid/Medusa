@@ -13,6 +13,7 @@ import { HttpTypes } from "@medusajs/types"
 
 import { convertToLocale } from "@lib/util/money"
 import { getProductSlug } from "@lib/util/slug"
+import { buildProductImageAlt } from "@lib/util/image-alt"
 import DeleteButton from "@modules/common/components/delete-button"
 import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
@@ -156,6 +157,11 @@ const CartDropdown = ({
                           <Thumbnail
                             thumbnail={item.thumbnail}
                             images={item.variant?.product?.images}
+                            alt={buildProductImageAlt({
+                              productTitle: item.product_title || item.title || "",
+                              context: isArabic ? "صورة المنتج في السلة" : "cart product image",
+                              locale,
+                            })}
                             size="square"
                           />
                         </LocalizedClientLink>

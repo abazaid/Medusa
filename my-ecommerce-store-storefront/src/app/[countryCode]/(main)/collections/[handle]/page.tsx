@@ -51,12 +51,20 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   if (!collection) {
     notFound()
   }
+  const isArabic = params.countryCode.toLowerCase() === "ar"
+  const title = isArabic
+    ? `${collection.title} | مجموعة منتجات فيب في السعودية`
+    : `${collection.title} | Vape Collection in Saudi Arabia`
+  const description = isArabic
+    ? `تصفح مجموعة ${collection.title} مع أفضل منتجات الفيب الأصلية والتوصيل السريع داخل السعودية.`
+    : `Browse ${collection.title} with original vape products and fast shipping across Saudi Arabia.`
+  const canonical = `${getBaseURL()}/${params.countryCode}/collections/${collection.handle}`
 
   const metadata = {
-    title: `${collection.title} | Vape Hub KSA`,
-    description: `Shop ${collection.title} at Vape Hub KSA.`,
+    title,
+    description,
     alternates: {
-      canonical: `${getBaseURL()}/${params.countryCode}/collections/${collection.handle}`,
+      canonical,
       languages: {
         ar: `${getBaseURL()}/ar/collections/${collection.handle}`,
         en: `${getBaseURL()}/en/collections/${collection.handle}`,
@@ -64,9 +72,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: `${collection.title} | Vape Hub KSA`,
-      description: `Shop ${collection.title} at Vape Hub KSA.`,
-      url: `${getBaseURL()}/${params.countryCode}/collections/${collection.handle}`,
+      title,
+      description,
+      url: canonical,
       type: "website",
     },
   } as Metadata

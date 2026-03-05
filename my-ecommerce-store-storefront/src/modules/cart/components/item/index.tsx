@@ -13,6 +13,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import Spinner from "@modules/common/icons/spinner"
 import Thumbnail from "@modules/products/components/thumbnail"
 import { getProductSlug } from "@lib/util/slug"
+import { buildProductImageAlt } from "@lib/util/image-alt"
 import { useParams } from "next/navigation"
 import { useState } from "react"
 
@@ -56,6 +57,11 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
     },
     localeSegment
   )
+  const thumbnailAlt = buildProductImageAlt({
+    productTitle: item.product_title || item.title || "",
+    context: localeSegment.toLowerCase() === "ar" ? "صورة المنتج في السلة" : "cart product image",
+    locale: localeSegment,
+  })
 
   return (
     <Table.Row className="w-full" data-testid="product-row">
@@ -70,6 +76,7 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
           <Thumbnail
             thumbnail={item.thumbnail}
             images={item.variant?.product?.images}
+            alt={thumbnailAlt}
             size="square"
           />
         </LocalizedClientLink>
