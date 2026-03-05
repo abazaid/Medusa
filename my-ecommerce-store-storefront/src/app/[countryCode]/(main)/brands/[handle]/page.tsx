@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 
 import { getLocale } from "@lib/data/locale-actions"
@@ -6,34 +7,90 @@ import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { brands, getBrandByHandle, resolveBrand } from "@lib/data/brands"
 import { getBaseURL } from "@lib/util/env"
+import { sortByAvailability } from "@lib/util/product-availability"
+import { generateBreadcrumbJsonLd } from "@lib/util/structured-data"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 import ProductPreview from "@modules/products/components/product-preview"
 
 type PageProps = {
   params: Promise<{ countryCode: string; handle: string }>
 }
 
-const listAllProductsForBrandPage = async (countryCode: string) => {
-  const products = []
-  let pageParam = 1
+type BrandProductsCacheEntry = {
+  products: any[]
+  expiresAt: number
+}
 
-  while (true) {
-    const result = await listProducts({
-      countryCode,
-      pageParam,
-      disableCache: true,
-      queryParams: {
-        limit: 100,
-      },
+declare global {
+  var __brand_products_cache__: Record<string, BrandProductsCacheEntry> | undefined
+}
+
+const BRAND_PRODUCTS_CACHE_TTL_MS = 5 * 60 * 1000
+
+const getBrandProductsCache = () => {
+  if (!globalThis.__brand_products_cache__) {
+    globalThis.__brand_products_cache__ = {}
+  }
+
+  return globalThis.__brand_products_cache__
+}
+
+const listProductsByBrand = async ({
+  countryCode,
+  brand,
+}: {
+  countryCode: string
+  brand: { handle: string; nameAr: string; nameEn: string }
+}) => {
+  const cacheKey = `${countryCode.toLowerCase()}:${brand.handle.toLowerCase()}`
+  const cache = getBrandProductsCache()
+  const cached = cache[cacheKey]
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.products
+  }
+
+  const normalized = new Set<string>()
+  const terms = [brand.handle, brand.nameEn, brand.nameAr]
+    .map((value) => (value || "").trim())
+    .filter(Boolean)
+    .filter((value) => {
+      const key = value.toLowerCase()
+      if (normalized.has(key)) {
+        return false
+      }
+      normalized.add(key)
+      return true
     })
 
-    products.push(...result.response.products)
+  const merged = new Map<string, any>()
 
-    if (!result.nextPage) {
-      break
+  const responses = await Promise.all(
+    terms.map((term) =>
+      listProducts({
+        countryCode,
+        queryParams: {
+          q: term,
+          limit: 48,
+        },
+      })
+    )
+  )
+
+  for (const result of responses) {
+    const response = result.response
+    for (const product of response.products || []) {
+      if (product.id) {
+        merged.set(product.id, product)
+      }
     }
+  }
 
-    pageParam = result.nextPage
+  const products = Array.from(merged.values())
+  cache[cacheKey] = {
+    products,
+    expiresAt: Date.now() + BRAND_PRODUCTS_CACHE_TTL_MS,
   }
 
   return products
@@ -53,8 +110,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     return {}
   }
 
-  const locale = await getLocale()
-  const isArabic = locale.toLowerCase() === "ar"
+  const isArabic = params.countryCode.toLowerCase() === "ar"
   const title = isArabic
     ? `${brand.nameAr} | ماركة أصلية في السعودية`
     : `${brand.nameEn} | Original Brand in Saudi Arabia`
@@ -68,6 +124,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     description,
     alternates: {
       canonical,
+      languages: {
+        ar: `${getBaseURL()}/ar/brands/${brand.handle}`,
+        en: `${getBaseURL()}/en/brands/${brand.handle}`,
+        "x-default": `${getBaseURL()}/ar/brands/${brand.handle}`,
+      },
     },
     openGraph: {
       title,
@@ -88,7 +149,7 @@ export default async function BrandPage(props: PageProps) {
   const [locale, region, productsResponse] = await Promise.all([
     getLocale(),
     getRegion(params.countryCode),
-    listAllProductsForBrandPage(params.countryCode),
+    listProductsByBrand({ countryCode: params.countryCode, brand }),
   ])
 
   if (!region) {
@@ -113,6 +174,7 @@ export default async function BrandPage(props: PageProps) {
       resolveBrand(sourceBrand)?.handle === brand.handle
     )
   })
+  const sortedBrandProducts = sortByAvailability(brandProducts)
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -121,8 +183,13 @@ export default async function BrandPage(props: PageProps) {
     logo: brand.logo,
     url: `${getBaseURL()}/${params.countryCode}/brands/${brand.handle}`,
     description,
-    numberOfItems: brandProducts.length,
+    numberOfItems: sortedBrandProducts.length,
   }
+  const breadcrumbSchema = generateBreadcrumbJsonLd([
+    { name: isArabic ? "الرئيسية" : "Home", url: `${getBaseURL()}/${params.countryCode}` },
+    { name: isArabic ? "الماركات" : "Brands", url: `${getBaseURL()}/${params.countryCode}/brands` },
+    { name: brandName, url: `${getBaseURL()}/${params.countryCode}/brands/${brand.handle}` },
+  ])
 
   return (
     <div className="bg-[#eef0f3] py-12">
@@ -130,8 +197,19 @@ export default async function BrandPage(props: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="content-container">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
+          <Breadcrumbs
+            items={[
+              { label: isArabic ? "الرئيسية" : "Home", href: "/" },
+              { label: isArabic ? "الماركات" : "Brands", href: "/brands" },
+              { label: brandName },
+            ]}
+          />
           <LocalizedClientLink
             href="/"
             className="text-sm font-semibold text-primary-700 transition-colors hover:text-primary-600"
@@ -141,9 +219,11 @@ export default async function BrandPage(props: PageProps) {
 
           <div className="mt-6 grid gap-8 md:grid-cols-[220px_1fr]">
             <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-6">
-              <img
+              <Image
                 src={brand.logo}
                 alt={brandName}
+                width={220}
+                height={110}
                 className="max-h-28 max-w-full object-contain"
               />
             </div>
@@ -178,13 +258,13 @@ export default async function BrandPage(props: PageProps) {
                 {isArabic ? "منتجات الماركة" : "Brand Products"}
               </h2>
               <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-700">
-                {brandProducts.length} {isArabic ? "منتج" : "Products"}
+                {sortedBrandProducts.length} {isArabic ? "منتج" : "Products"}
               </span>
             </div>
 
-            {brandProducts.length ? (
+            {sortedBrandProducts.length ? (
               <ul className="mt-8 grid grid-cols-2 gap-6 small:grid-cols-3 medium:grid-cols-4">
-                {brandProducts.map((product) => (
+                {sortedBrandProducts.map((product) => (
                   <li key={product.id}>
                     <ProductPreview product={product} region={region} />
                   </li>

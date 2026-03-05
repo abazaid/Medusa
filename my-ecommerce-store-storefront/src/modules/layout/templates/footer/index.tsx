@@ -2,6 +2,7 @@ import { getLocale } from "@lib/data/locale-actions"
 import { listCategories } from "@lib/data/categories"
 import { listCollections } from "@lib/data/collections"
 import { Text } from "@medusajs/ui"
+import { getCategorySlug } from "@lib/util/slug"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
@@ -9,7 +10,7 @@ export default async function Footer() {
   const [locale, { collections }, productCategories] = await Promise.all([
     getLocale(),
     listCollections({
-      fields: "*products",
+      fields: "id,handle,title",
     }),
     listCategories(),
   ])
@@ -74,7 +75,9 @@ export default async function Footer() {
               {topCategories?.map((category) => (
                 <li key={category.id}>
                   <LocalizedClientLink
-                    href={`/categories/${category.handle}`}
+                    href={`/categories/${encodeURIComponent(
+                      getCategorySlug(category, locale)
+                    )}`}
                     className="transition-colors hover:text-primary-300"
                   >
                     {category.name}

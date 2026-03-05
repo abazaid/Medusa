@@ -191,11 +191,23 @@ const makeAsciiHandle = (title: string, fallback: string) => {
   const normalizedFallback = fallback.toLowerCase().replace(/[^a-z0-9]+/g, "-")
 
   if (asciiSlug) {
-    return `${asciiSlug}-${normalizedFallback}`.replace(/-+/g, "-")
+    return asciiSlug.replace(/-+/g, "-")
   }
 
   return normalizedFallback || `product-${Date.now()}`
 }
+
+const makeArabicSlug = (title: string) =>
+  normalizeText(title)
+    .normalize("NFKC")
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[^\u0600-\u06FF0-9\s-]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+
+const makeEnglishSlug = (title: string, fallback: string) =>
+  makeAsciiHandle(title, fallback)
 
 const stripHtml = (value?: string | null) =>
   normalizeText(
@@ -789,6 +801,8 @@ export const importProductsFromWorkbook = async ({
     const brand = normalizeText(row.W)
     const brandRecord = resolveBrandRecord(brand)
     const typeId = productType ? await ensureTypeId(productType) : undefined
+    const slugEn = makeEnglishSlug(title, baseSku)
+    const slugAr = makeArabicSlug(title)
 
     if (brand && !brandRecord) {
       logger.warn(`No brand match found for "${title}" using "${brand}"`)
@@ -803,7 +817,7 @@ export const importProductsFromWorkbook = async ({
             description: normalizeText(row.J) || undefined,
             is_giftcard: false,
             discountable: true,
-            handle: makeAsciiHandle(title, baseSku),
+            handle: slugEn,
             status: ProductStatus.PUBLISHED as ProductStatus,
             images,
             thumbnail: imageUrls[0],
@@ -835,6 +849,8 @@ export const importProductsFromWorkbook = async ({
               page_title: metaTitle,
               meta_description: metaDescription,
               page_description: metaDescription,
+              slug_en: slugEn,
+              slug_ar: slugAr || null,
             },
             sales_channels: [{ id: defaultSalesChannelId }],
             shipping_profile_id: shippingProfile.id,

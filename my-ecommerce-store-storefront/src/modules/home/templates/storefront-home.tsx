@@ -1,5 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 import { Heading, Text } from "@medusajs/ui"
+import Image from "next/image"
 
 import { brands } from "@lib/data/brands"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -472,9 +473,11 @@ export default function StorefrontHome({
                 className="flex min-h-[132px] flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-4 text-center transition-colors hover:border-primary-300 hover:bg-white"
                 title={activeLocale === "ar" ? brand.nameAr : brand.nameEn}
               >
-                <img
+                <Image
                   src={brand.logo}
                   alt={activeLocale === "ar" ? brand.nameAr : brand.nameEn}
+                  width={160}
+                  height={48}
                   className="mb-3 max-h-12 max-w-full object-contain"
                 />
                 <div className="text-sm font-bold tracking-[0.08em] text-secondary-800">

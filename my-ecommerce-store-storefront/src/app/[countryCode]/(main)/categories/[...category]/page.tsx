@@ -1,10 +1,18 @@
 import { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 import { getCategoryByHandle, listCategories } from "@lib/data/categories"
-import { listRegions } from "@lib/data/regions"
 import { getBaseURL } from "@lib/util/env"
-import { StoreRegion } from "@medusajs/types"
+import {
+  getCategorySlug,
+  getProductSlug,
+  normalizeComparableSlug,
+} from "@lib/util/slug"
+import {
+  extractFaqFromMetadata,
+  generateBreadcrumbJsonLd,
+  generateFaqJsonLd,
+} from "@lib/util/structured-data"
 import CategoryTemplate from "@modules/categories/templates"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
@@ -23,9 +31,7 @@ export async function generateStaticParams() {
     return []
   }
 
-  const countryCodes = await listRegions().then((regions: StoreRegion[]) =>
-    regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
-  )
+  const countryCodes = ["ar", "en"]
 
   const categoryHandles = product_categories.map(
     (category: any) => category.handle
@@ -45,8 +51,12 @@ export async function generateStaticParams() {
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
+  const searchParams = await props.searchParams
   try {
-    const productCategory = await getCategoryByHandle(params.category)
+    const productCategory = await getCategoryByHandle(params.category, params.countryCode)
+    if (!productCategory) {
+      notFound()
+    }
     const metadata =
       (productCategory.metadata as Record<string, unknown> | null) || {}
     const metaTitle =
@@ -65,13 +75,33 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
         : productCategory.description ??
           `تسوق منتجات ${productCategory.name} الأصلية داخل السعودية مع شحن سريع.`
 
-    const canonical = `${getBaseURL()}/${params.countryCode}/categories/${params.category.join("/")}`
+    const canonicalSlug = getCategorySlug(productCategory, params.countryCode)
+    const canonical = `${getBaseURL()}/${params.countryCode}/categories/${encodeURIComponent(
+      canonicalSlug
+    )}`
+    const arSlug = getCategorySlug(productCategory, "ar")
+    const enSlug = getCategorySlug(productCategory, "en")
 
     return {
       title: metaTitle,
       description: metaDescription,
+      robots:
+        searchParams?.page || searchParams?.sortBy
+          ? {
+              index: false,
+              follow: true,
+            }
+          : {
+              index: true,
+              follow: true,
+            },
       alternates: {
         canonical,
+        languages: {
+          ar: `${getBaseURL()}/ar/categories/${encodeURIComponent(arSlug)}`,
+          en: `${getBaseURL()}/en/categories/${encodeURIComponent(enSlug)}`,
+          "x-default": `${getBaseURL()}/ar/categories/${encodeURIComponent(arSlug)}`,
+        },
       },
       openGraph: {
         title: metaTitle,
@@ -89,18 +119,92 @@ export default async function CategoryPage(props: Props) {
   const params = await props.params
   const { sortBy, page } = searchParams
 
-  const productCategory = await getCategoryByHandle(params.category)
+  const productCategory = await getCategoryByHandle(params.category, params.countryCode)
 
   if (!productCategory) {
     notFound()
   }
+  const canonicalCategorySlug = getCategorySlug(productCategory, params.countryCode)
+  if (
+    normalizeComparableSlug(params.category.join("/")) !==
+    normalizeComparableSlug(canonicalCategorySlug)
+  ) {
+    redirect(
+      `/${params.countryCode}/categories/${encodeURIComponent(canonicalCategorySlug)}`
+    )
+  }
+
+  const baseUrl = getBaseURL()
+  const locale = params.countryCode.toLowerCase() === "ar" ? "ar" : "en"
+  const labels =
+    locale === "ar"
+      ? { home: "الرئيسية", store: "المتجر" }
+      : { home: "Home", store: "Store" }
+  const parentChain: { name: string; handle: string }[] = []
+  let pointer = productCategory.parent_category
+  while (pointer) {
+    parentChain.unshift({ name: pointer.name || pointer.handle, handle: pointer.handle })
+    pointer = pointer.parent_category
+  }
+
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: labels.home, url: `${baseUrl}/${params.countryCode}` },
+    { name: labels.store, url: `${baseUrl}/${params.countryCode}/store` },
+    ...parentChain.map((parent) => ({
+      name: parent.name,
+      url: `${baseUrl}/${params.countryCode}/categories/${encodeURIComponent(
+        getCategorySlug(parent, params.countryCode)
+      )}`,
+    })),
+    {
+      name: productCategory.name || productCategory.handle,
+      url: `${baseUrl}/${params.countryCode}/categories/${encodeURIComponent(
+        getCategorySlug(productCategory, params.countryCode)
+      )}`,
+    },
+  ])
+
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: productCategory.name || productCategory.handle,
+    itemListElement: (productCategory.products || []).slice(0, 24).map((product, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${baseUrl}/${params.countryCode}/products/${encodeURIComponent(
+        getProductSlug(product, params.countryCode)
+      )}`,
+      name: product.title || product.handle,
+    })),
+  }
+  const categoryMetadata =
+    (productCategory.metadata as Record<string, unknown> | null) || {}
+  const faqItems = extractFaqFromMetadata(categoryMetadata, locale)
 
   return (
-    <CategoryTemplate
-      category={productCategory}
-      sortBy={sortBy}
-      page={page}
-      countryCode={params.countryCode}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+      />
+      {faqItems.length ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateFaqJsonLd(faqItems)),
+          }}
+        />
+      ) : null}
+      <CategoryTemplate
+        category={productCategory}
+        sortBy={sortBy}
+        page={page}
+        countryCode={params.countryCode}
+      />
+    </>
   )
 }

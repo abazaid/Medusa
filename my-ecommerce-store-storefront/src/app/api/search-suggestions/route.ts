@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 import { sdk } from "@lib/config"
+import { toStoreCountryCode } from "@lib/util/slug"
 import { HttpTypes } from "@medusajs/types"
 
 type Suggestion = {
@@ -8,6 +9,7 @@ type Suggestion = {
   title: string
   handle: string
   thumbnail?: string | null
+  inventory?: number
 }
 
 const normalizeText = (value?: string | null) =>
@@ -15,11 +17,15 @@ const normalizeText = (value?: string | null) =>
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u064B-\u065F]/g, "")
-    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .replace(/[^\u0600-\u06FFa-z0-9\s]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
 
-const scoreSuggestion = (title: string, query: string) => {
+const scoreSuggestion = (
+  title: string,
+  query: string,
+  inventory: number = 0
+) => {
   const normalizedTitle = normalizeText(title)
   const normalizedQuery = normalizeText(query)
 
@@ -27,16 +33,18 @@ const scoreSuggestion = (title: string, query: string) => {
     return 0
   }
 
+  const stockBonus = inventory > 0 ? 50 : 0
+
   if (normalizedTitle === normalizedQuery) {
-    return 1000
+    return 1000 + stockBonus
   }
 
   if (normalizedTitle.startsWith(normalizedQuery)) {
-    return 700
+    return 700 + stockBonus
   }
 
   if (normalizedTitle.includes(normalizedQuery)) {
-    return 500
+    return 500 + stockBonus
   }
 
   const queryTokens = normalizedQuery.split(" ").filter(Boolean)
@@ -46,7 +54,7 @@ const scoreSuggestion = (title: string, query: string) => {
     0
   )
 
-  return overlap * 100
+  return overlap * 100 + stockBonus
 }
 
 const pickRegionId = async (countryCode: string) => {
@@ -58,7 +66,7 @@ const pickRegionId = async (countryCode: string) => {
     }
   )
 
-  const normalizedCode = (countryCode || "sa").toLowerCase()
+  const normalizedCode = toStoreCountryCode(countryCode)
   const matchedRegion = (regions || []).find((region) =>
     region.countries?.some((country) => country.iso_2?.toLowerCase() === normalizedCode)
   )
@@ -75,7 +83,7 @@ const pickRegionId = async (countryCode: string) => {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const q = (searchParams.get("q") || "").trim()
-  const countryCode = (searchParams.get("countryCode") || "sa").toLowerCase()
+  const countryCode = toStoreCountryCode(searchParams.get("countryCode") || "sa")
 
   if (q.length < 2) {
     return NextResponse.json({ suggestions: [] })
@@ -88,7 +96,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ suggestions: [] })
     }
 
-    const fields = "id,title,handle,thumbnail"
+    const fields = "id,title,handle,thumbnail,*variants.inventory_quantity"
     const productsResponse = await sdk.client.fetch<{
       products: HttpTypes.StoreProduct[]
     }>("/store/products", {
@@ -107,6 +115,11 @@ export async function GET(request: NextRequest) {
       title: product.title || "",
       handle: product.handle || "",
       thumbnail: product.thumbnail || null,
+      inventory:
+        (product.variants || []).reduce((sum, variant) => {
+          const qty = typeof variant.inventory_quantity === "number" ? variant.inventory_quantity : 0
+          return sum + qty
+        }, 0) || 0,
     }))
 
     if (candidates.length < 3) {
@@ -131,13 +144,18 @@ export async function GET(request: NextRequest) {
           title: product.title || "",
           handle: product.handle || "",
           thumbnail: product.thumbnail || null,
+          inventory:
+            (product.variants || []).reduce((sum, variant) => {
+              const qty = typeof variant.inventory_quantity === "number" ? variant.inventory_quantity : 0
+              return sum + qty
+            }, 0) || 0,
         }
 
         if (!fallbackCandidate.id || seen.has(fallbackCandidate.id)) {
           continue
         }
 
-        if (scoreSuggestion(fallbackCandidate.title, q) <= 0) {
+        if (scoreSuggestion(fallbackCandidate.title, q, fallbackCandidate.inventory || 0) <= 0) {
           continue
         }
 
@@ -151,7 +169,7 @@ export async function GET(request: NextRequest) {
     const ranked = candidates
       .map((item) => ({
         ...item,
-        score: scoreSuggestion(item.title, q),
+        score: scoreSuggestion(item.title, q, item.inventory || 0),
       }))
       .filter((item) => item.score > 0)
       .sort((left, right) => right.score - left.score)
@@ -161,6 +179,7 @@ export async function GET(request: NextRequest) {
       title: item.title,
       handle: item.handle,
       thumbnail: item.thumbnail,
+      inventory: item.inventory || 0,
     }))
 
     return NextResponse.json({ suggestions })

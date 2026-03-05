@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { getProductSlug } from "@lib/util/slug"
 
 type Suggestion = {
   id: string
@@ -18,7 +19,7 @@ export default function NavSearchAutocomplete({ placeholder }: Props) {
   const router = useRouter()
   const params = useParams()
   const countryCode =
-    typeof params.countryCode === "string" ? params.countryCode : "sa"
+    typeof params.countryCode === "string" ? params.countryCode : "ar"
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   const [query, setQuery] = useState("")
@@ -97,7 +98,11 @@ export default function NavSearchAutocomplete({ placeholder }: Props) {
   const openSuggestion = (suggestion: Suggestion) => {
     setFocused(false)
     setQuery("")
-    router.push(`/${countryCode}/products/${suggestion.handle}`)
+    const slug = getProductSlug(
+      { title: suggestion.title, handle: suggestion.handle, metadata: null },
+      countryCode
+    )
+    router.push(`/${countryCode}/products/${encodeURIComponent(slug)}`)
   }
 
   const showSuggestions = focused && (suggestions.length > 0 || loading)

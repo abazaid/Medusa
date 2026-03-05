@@ -11,8 +11,7 @@ type PageProps = {
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params
-  const locale = await getLocale()
-  const isArabic = locale.toLowerCase() === "ar"
+  const isArabic = params.countryCode.toLowerCase() === "ar"
   const title = isArabic
     ? "جميع الماركات | أرشيف الماركات التجارية"
     : "All Brands | Brand Directory"
@@ -26,6 +25,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     description,
     alternates: {
       canonical,
+      languages: {
+        ar: `${getBaseURL()}/ar/brands`,
+        en: `${getBaseURL()}/en/brands`,
+        "x-default": `${getBaseURL()}/ar/brands`,
+      },
     },
     openGraph: {
       title,

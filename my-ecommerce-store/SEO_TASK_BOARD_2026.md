@@ -15,35 +15,31 @@
 
 | Phase | Task | Priority | Status | Owner Notes |
 |---|---|---:|---|---|
-| 1 | HTTPS + canonical baseline review | P0 | Pending | verify env/base URL + redirects |
-| 1 | XML sitemap + image sitemap | P0 | Done | sitemap.xml + image-sitemap.xml implemented |
-| 1 | robots.txt + indexation rules | P0 | In Progress | robots + noindex for cart/account/checkout implemented |
-| 1 | Search Console + GA4 integration hooks | P0 | Pending | config + docs + env |
-| 1 | **Blog system in Medusa (admin + store API + storefront)** | P0 | **Done** | module + migration + admin page + store pages |
-| 2 | Core Web Vitals pass (LCP/FID/CLS) | P0 | Pending | audit + optimization |
-| 2 | Structured Data: Product/Breadcrumb/Organization/FAQ/ItemList/BlogPosting | P0 | In Progress | product/category/brand partially present |
-| 2 | Breadcrumb UX/Schema everywhere | P1 | Pending | product/category/blog |
-| 3 | Title/Meta rules enforcement (all entities) | P0 | Pending | strict fallback strategy |
-| 3 | URL policy and redirect hygiene | P1 | Pending | lowercase, hyphen, 301 rules |
-| 3 | Image optimization policy (format, size, alt) | P1 | Pending | webp + lazy loading + naming |
-| 3 | Internal linking system | P1 | Pending | product ↔ category ↔ brand ↔ blog |
+| 1 | HTTPS + canonical baseline review | P0 | In Progress | base URL + canonical on key pages implemented; redirects audit pending |
+| 1 | XML sitemap (index + locale split) | P0 | Done | sitemap.xml index -> sitemap-ar.xml + sitemap-en.xml + image-sitemap.xml |
+| 1 | robots.txt + indexation rules | P0 | Done | robots points to sitemap index; cart/account/checkout noindex + query blocks active |
+| 1 | Locale URL architecture (`/ar` default, `/en`) | P0 | Done | middleware redirects `/sa/*` -> `/ar/*`, locale switcher in header |
+| 1 | Search Console + GA4 integration hooks | P0 | Done | optional NEXT_PUBLIC_GSC_VERIFICATION + NEXT_PUBLIC_GA_MEASUREMENT_ID wired |
+| 1 | Blog system in Medusa (admin + store API + storefront) | P0 | Done | module + migration + admin page + store pages |
+| 2 | Core Web Vitals pass (LCP/FID/CLS) | P0 | In Progress | image formats/cache + next/image roll-out started |
+| 2 | Structured Data: Product/Breadcrumb/Organization/FAQ/ItemList/BlogPosting | P0 | Done | Product + Breadcrumb + Organization + FAQ + ItemList + BlogPosting active |
+| 2 | Breadcrumb UX/Schema everywhere | P1 | Done | visible breadcrumbs + breadcrumb schema on core public pages |
+| 3 | Title/Meta rules enforcement (all entities) | P0 | In Progress | locale alternates/hreflang + canonical self implemented on key pages |
+| 3 | URL policy and redirect hygiene | P1 | Done | middleware normalizes uppercase, duplicate slashes, and trailing slashes |
+| 3 | Image optimization policy (format, size, alt) | P1 | In Progress | AVIF/WebP + cache TTL + next/image on blog/brand/home brand tiles |
+| 3 | Internal linking system | P1 | In Progress | product/category/blog breadcrumbs + contextual internal links added |
 | 4 | Product descriptions 300+ words | P1 | Pending | generator + QA |
 | 4 | Category content 500+ words | P1 | Pending | intro + buying guide |
-| 4 | Topic authority hubs (no writing yet) | P1 | Planned | architecture + templates only |
-| 4 | SEO landing pages framework | P1 | Planned | dynamic landing model + template |
+| 4 | Topic authority hubs (no writing yet) | P1 | Done | architecture route `/landing` + bilingual hub pages ready |
+| 4 | SEO landing pages framework | P1 | Done | dynamic bilingual landing templates at `/landing/[handle]` |
 
 ## Detailed Execution Order
-1. Finish Blog module + admin section + store pages + SEO metadata.
-2. Add robots.txt and sitemap endpoints (including blog + image sitemap).
-3. Add index/noindex control for cart/checkout/account/search/filter pages.
-4. Add full schema coverage and validate JSON-LD output.
-5. Start CWV performance pass.
+1. Finish index/noindex controls and canonical/hreflang coverage.
+2. Complete schema coverage and validate JSON-LD outputs.
+3. Continue CWV optimization pass and image optimization expansion.
+4. Build structured content framework (landing pages + hubs) before content writing.
 
-## Current Milestone (Started)
-- Blog data model fields include SEO:
-  - `handle`, `status`, `title_ar/en`, `excerpt_ar/en`, `content_ar/en`
-  - `meta_title_ar/en`, `meta_description_ar/en`, `canonical_url`, `cover_image`, `published_at`
-- Admin route planned at `Admin > Blog` for CRUD.
-- Store routes planned:
-  - `/store/blog`
-  - `/store/blog/[handle]`
+## Remaining External Inputs
+- Google Search Console property verification value (if not set yet).
+- GA4 Measurement ID (if analytics tracking should be activated).
+- Decision on content generation workflow for 300+ word products and 500+ word categories.

@@ -1,6 +1,7 @@
 "use server"
 
 import { sdk } from "@lib/config"
+import { sortByAvailability } from "@lib/util/product-availability"
 import { sortProducts } from "@lib/util/sort-products"
 import { HttpTypes } from "@medusajs/types"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
@@ -111,7 +112,7 @@ export const listProducts = async ({
           offset,
           region_id: region?.id,
           fields:
-            "*variants.calculated_price,+variants.inventory_quantity,*variants.images,+metadata,+tags,",
+            "*variants.calculated_price,+variants.inventory_quantity,*variants.images,*categories,+metadata,+tags,",
           ...queryParams,
         },
         headers,
@@ -184,11 +185,12 @@ export const listProductsWithSort = async ({
     })
   }
 
+  const availabilitySortedProducts = sortByAvailability(sortedProducts)
   const pageParam = (page - 1) * limit
 
   const nextPage = count > pageParam + limit ? pageParam + limit : null
 
-  const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit)
+  const paginatedProducts = availabilitySortedProducts.slice(pageParam, pageParam + limit)
 
   return {
     response: {

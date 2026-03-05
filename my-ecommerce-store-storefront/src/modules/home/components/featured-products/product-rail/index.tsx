@@ -1,4 +1,5 @@
 import { listProducts } from "@lib/data/products"
+import { sortByAvailability } from "@lib/util/product-availability"
 import { HttpTypes } from "@medusajs/types"
 import { Text } from "@medusajs/ui"
 
@@ -23,7 +24,9 @@ export default async function ProductRail({
     },
   })
 
-  if (!pricedProducts || pricedProducts.length === 0) {
+  const sortedProducts = sortByAvailability(pricedProducts || [])
+
+  if (!sortedProducts.length) {
     return null
   }
 
@@ -52,7 +55,7 @@ export default async function ProductRail({
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {pricedProducts.slice(0, 8).map((product) => (
+          {sortedProducts.slice(0, 8).map((product) => (
             <div key={product.id} className="group">
               <ProductPreview 
                 product={product} 
@@ -63,7 +66,7 @@ export default async function ProductRail({
           ))}
         </div>
         
-        {pricedProducts.length > 8 && (
+        {sortedProducts.length > 8 && (
           <div className="text-center mt-8">
             <InteractiveLink 
               href={`/collections/${collection.handle}`}

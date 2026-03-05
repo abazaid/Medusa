@@ -1,5 +1,6 @@
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
+import { sortByAvailability } from "@lib/util/product-availability"
 import { HttpTypes } from "@medusajs/types"
 import Product from "../product-preview"
 
@@ -37,9 +38,10 @@ export default async function RelatedProducts({
     queryParams,
     countryCode,
   }).then(({ response }) => {
-    return response.products.filter(
+    const filtered = response.products.filter(
       (responseProduct) => responseProduct.id !== product.id
     )
+    return sortByAvailability(filtered)
   })
 
   if (!products.length) {

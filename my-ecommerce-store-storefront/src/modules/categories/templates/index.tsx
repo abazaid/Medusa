@@ -8,6 +8,8 @@ import { SortOptions } from "@modules/store/components/refinement-list/sort-prod
 import PaginatedProducts from "@modules/store/templates/paginated-products"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
+import { getCategorySlug } from "@lib/util/slug"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 
 export default function CategoryTemplate({
   category,
@@ -26,6 +28,7 @@ export default function CategoryTemplate({
   if (!category || !countryCode) notFound()
 
   const parents = [] as HttpTypes.StoreProductCategory[]
+  const isArabic = countryCode.toLowerCase() === "ar"
 
   const getParents = (category: HttpTypes.StoreProductCategory) => {
     if (category.parent_category) {
@@ -43,13 +46,31 @@ export default function CategoryTemplate({
     >
       <RefinementList sortBy={sort} data-testid="sort-by-container" />
       <div className="w-full">
+        <Breadcrumbs
+          items={[
+            { label: isArabic ? "الرئيسية" : "Home", href: "/" },
+            { label: isArabic ? "المتجر" : "Store", href: "/store" },
+            ...parents
+              .slice()
+              .reverse()
+              .map((parent) => ({
+                label: parent.name || "",
+                href: `/categories/${encodeURIComponent(
+                  getCategorySlug(parent, countryCode)
+                )}`,
+              })),
+            { label: category.name || category.handle || "" },
+          ]}
+        />
         <div className="flex flex-row mb-8 text-2xl-semi gap-4">
           {parents &&
             parents.map((parent) => (
               <span key={parent.id} className="text-ui-fg-subtle">
                 <LocalizedClientLink
                   className="mr-4 hover:text-black"
-                  href={`/categories/${parent.handle}`}
+                  href={`/categories/${encodeURIComponent(
+                    getCategorySlug(parent, countryCode)
+                  )}`}
                   data-testid="sort-by-link"
                 >
                   {parent.name}
@@ -69,7 +90,11 @@ export default function CategoryTemplate({
             <ul className="grid grid-cols-1 gap-2">
               {category.category_children?.map((c) => (
                 <li key={c.id}>
-                  <InteractiveLink href={`/categories/${c.handle}`}>
+                  <InteractiveLink
+                    href={`/categories/${encodeURIComponent(
+                      getCategorySlug(c, countryCode)
+                    )}`}
+                  >
                     {c.name}
                   </InteractiveLink>
                 </li>

@@ -12,6 +12,7 @@ import { Button } from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
 
 import { convertToLocale } from "@lib/util/money"
+import { getProductSlug } from "@lib/util/slug"
 import DeleteButton from "@modules/common/components/delete-button"
 import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
@@ -135,13 +136,23 @@ const CartDropdown = ({
                 <div className="grid max-h-[402px] grid-cols-1 gap-y-8 overflow-y-scroll p-px px-4 no-scrollbar">
                   {cartState.items
                     .sort((a, b) => ((a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1))
-                    .map((item) => (
-                      <div
-                        className="grid grid-cols-[122px_1fr] gap-x-4"
-                        key={item.id}
-                        data-testid="cart-item"
-                      >
-                        <LocalizedClientLink href={`/products/${item.product_handle}`} className="w-24">
+                    .map((item) => {
+                      const productSlug = getProductSlug(
+                        {
+                          title: item.product_title || item.title || "",
+                          handle: item.product_handle || "",
+                          metadata: null,
+                        },
+                        locale
+                      )
+
+                      return (
+                        <div
+                          className="grid grid-cols-[122px_1fr] gap-x-4"
+                          key={item.id}
+                          data-testid="cart-item"
+                        >
+                          <LocalizedClientLink href={`/products/${encodeURIComponent(productSlug)}`} className="w-24">
                           <Thumbnail
                             thumbnail={item.thumbnail}
                             images={item.variant?.product?.images}
@@ -154,7 +165,7 @@ const CartDropdown = ({
                               <div className="mr-4 flex w-[180px] flex-col overflow-ellipsis whitespace-nowrap">
                                 <h3 className="text-base-regular overflow-hidden text-ellipsis">
                                   <LocalizedClientLink
-                                    href={`/products/${item.product_handle}`}
+                                    href={`/products/${encodeURIComponent(productSlug)}`}
                                     data-testid="product-link"
                                   >
                                     {item.title}
@@ -186,8 +197,9 @@ const CartDropdown = ({
                             {labels.remove}
                           </DeleteButton>
                         </div>
-                      </div>
-                    ))}
+                        </div>
+                      )
+                    })}
                 </div>
                 <div className="flex flex-col gap-y-4 p-4 text-small-regular">
                   <div className="flex items-center justify-between">

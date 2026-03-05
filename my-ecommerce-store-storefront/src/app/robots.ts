@@ -12,10 +12,14 @@ export default function robots(): MetadataRoute.Robots {
         allow: ["/"],
         disallow: [
           "/api/",
-          "/sa/cart",
-          "/sa/checkout",
-          "/sa/account",
-          "/sa/order",
+          "/ar/cart",
+          "/ar/checkout",
+          "/ar/account",
+          "/ar/order",
+          "/en/cart",
+          "/en/checkout",
+          "/en/account",
+          "/en/order",
           "/*?*q=*",
           "/*?*page=*",
           "/*?*sortBy=*",
@@ -23,7 +27,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: [`${baseUrl}/sitemap.xml`, `${baseUrl}/image-sitemap.xml`],
+    sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,
   }
 }

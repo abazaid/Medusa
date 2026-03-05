@@ -110,6 +110,22 @@ NEXT_PUBLIC_STRIPE_KEY=<your-stripe-public-key>
 
 You'll also need to setup the integrations in your Medusa server. See the [Medusa documentation](https://docs.medusajs.com) for more information on how to configure [Stripe](https://docs.medusajs.com/resources/commerce-modules/payment/payment-provider/stripe#main).
 
+# SEO/Analytics environment variables
+
+Optional SEO and analytics variables supported by this storefront:
+
+```shell
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_GSC_VERIFICATION=google-site-verification-code
+```
+
+Sitemap endpoints:
+
+- `/sitemap.xml` (sitemap index)
+- `/sitemap-ar.xml` (Arabic URLs)
+- `/sitemap-en.xml` (English URLs)
+- `/image-sitemap.xml` (image sitemap)
+
 # Resources
 
 ## Learn more about Medusa

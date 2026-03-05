@@ -1,13 +1,8 @@
 import { Metadata } from "next"
 
+import { getBaseURL } from "@lib/util/env"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import StoreTemplate from "@modules/store/templates"
-
-export const metadata: Metadata = {
-  title: "Shop All Products | Vape Hub KSA",
-  description:
-    "Browse all vape devices, e-liquids, and accessories at Vape Hub KSA with fast delivery across Saudi Arabia.",
-}
 
 type Params = {
   searchParams: Promise<{
@@ -18,6 +13,43 @@ type Params = {
   params: Promise<{
     countryCode: string
   }>
+}
+
+export async function generateMetadata(props: Params): Promise<Metadata> {
+  const params = await props.params
+  const searchParams = await props.searchParams
+  const q = (searchParams.q || "").trim()
+  const canonical = `${getBaseURL()}/${params.countryCode}/store`
+
+  return {
+    title: "Shop All Products | Vape Hub KSA",
+    description:
+      "Browse all vape devices, e-liquids, and accessories at Vape Hub KSA with fast delivery across Saudi Arabia.",
+    alternates: {
+      canonical,
+      languages: {
+        ar: `${getBaseURL()}/ar/store`,
+        en: `${getBaseURL()}/en/store`,
+        "x-default": `${getBaseURL()}/ar/store`,
+      },
+    },
+    robots: q
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+    openGraph: {
+      title: "Shop All Products | Vape Hub KSA",
+      description:
+        "Browse all vape devices, e-liquids, and accessories at Vape Hub KSA with fast delivery across Saudi Arabia.",
+      url: canonical,
+      type: "website",
+    },
+  }
 }
 
 export default async function StorePage(props: Params) {

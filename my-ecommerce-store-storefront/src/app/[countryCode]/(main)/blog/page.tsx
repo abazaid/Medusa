@@ -1,9 +1,12 @@
 import { Metadata } from "next"
+import Image from "next/image"
 
 import { listBlogPosts } from "@lib/data/blog"
 import { getLocale } from "@lib/data/locale-actions"
 import { getBaseURL } from "@lib/util/env"
+import { generateBreadcrumbJsonLd } from "@lib/util/structured-data"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Breadcrumbs from "@modules/common/components/breadcrumbs"
 
 type PageProps = {
   params: Promise<{ countryCode: string }>
@@ -11,8 +14,7 @@ type PageProps = {
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params
-  const locale = await getLocale()
-  const isArabic = locale.toLowerCase() === "ar"
+  const isArabic = params.countryCode.toLowerCase() === "ar"
   const title = isArabic ? "المدونة | مقالات ونصائح الفيب" : "Blog | Vape Guides & Tips"
   const description = isArabic
     ? "تصفح مقالات المدونة: أدلة، نصائح شراء، ومقارنات تساعدك تختار المنتج المناسب."
@@ -24,6 +26,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     description,
     alternates: {
       canonical,
+      languages: {
+        ar: `${getBaseURL()}/ar/blog`,
+        en: `${getBaseURL()}/en/blog`,
+        "x-default": `${getBaseURL()}/ar/blog`,
+      },
     },
     openGraph: {
       title,
@@ -56,6 +63,10 @@ export default async function BlogPage(props: PageProps) {
       name: post.title,
     })),
   }
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: isArabic ? "الرئيسية" : "Home", url: `${getBaseURL()}/${params.countryCode}` },
+    { name: pageTitle, url: pageUrl },
+  ])
 
   return (
     <div className="bg-[#eef0f3] py-12">
@@ -63,8 +74,18 @@ export default async function BlogPage(props: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <div className="content-container">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
+          <Breadcrumbs
+            items={[
+              { label: isArabic ? "الرئيسية" : "Home", href: "/" },
+              { label: pageTitle },
+            ]}
+          />
           <h1 className="text-3xl font-bold text-secondary-900 md:text-4xl">{pageTitle}</h1>
           <p className="mt-4 max-w-3xl text-base leading-8 text-secondary-700">{pageDescription}</p>
 
@@ -73,9 +94,12 @@ export default async function BlogPage(props: PageProps) {
               {posts.map((post) => (
                 <li key={post.id} className="rounded-xl border border-slate-200 bg-white p-5">
                   {post.cover_image ? (
-                    <img
+                    <Image
                       src={post.cover_image}
                       alt={post.title}
+                      width={1200}
+                      height={630}
+                      sizes="(max-width: 768px) 100vw, 50vw"
                       className="h-44 w-full rounded-lg object-cover"
                     />
                   ) : null}

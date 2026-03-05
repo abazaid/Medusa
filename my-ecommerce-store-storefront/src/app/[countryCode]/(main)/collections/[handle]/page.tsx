@@ -2,8 +2,8 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { getCollectionByHandle, listCollections } from "@lib/data/collections"
-import { listRegions } from "@lib/data/regions"
-import { StoreCollection, StoreRegion } from "@medusajs/types"
+import { getBaseURL } from "@lib/util/env"
+import { StoreCollection } from "@medusajs/types"
 import CollectionTemplate from "@modules/collections/templates"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
@@ -19,20 +19,14 @@ export const PRODUCT_LIMIT = 12
 
 export async function generateStaticParams() {
   const { collections } = await listCollections({
-    fields: "*products",
+    fields: "handle",
   })
 
   if (!collections) {
     return []
   }
 
-  const countryCodes = await listRegions().then(
-    (regions: StoreRegion[]) =>
-      regions
-        ?.map((r) => r.countries?.map((c) => c.iso_2))
-        .flat()
-        .filter(Boolean) as string[]
-  )
+  const countryCodes = ["ar", "en"]
 
   const collectionHandles = collections.map(
     (collection: StoreCollection) => collection.handle
@@ -61,6 +55,20 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const metadata = {
     title: `${collection.title} | Vape Hub KSA`,
     description: `Shop ${collection.title} at Vape Hub KSA.`,
+    alternates: {
+      canonical: `${getBaseURL()}/${params.countryCode}/collections/${collection.handle}`,
+      languages: {
+        ar: `${getBaseURL()}/ar/collections/${collection.handle}`,
+        en: `${getBaseURL()}/en/collections/${collection.handle}`,
+        "x-default": `${getBaseURL()}/ar/collections/${collection.handle}`,
+      },
+    },
+    openGraph: {
+      title: `${collection.title} | Vape Hub KSA`,
+      description: `Shop ${collection.title} at Vape Hub KSA.`,
+      url: `${getBaseURL()}/${params.countryCode}/collections/${collection.handle}`,
+      type: "website",
+    },
   } as Metadata
 
   return metadata

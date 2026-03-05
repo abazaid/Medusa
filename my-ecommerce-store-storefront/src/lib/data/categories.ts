@@ -1,4 +1,8 @@
 import { sdk } from "@lib/config"
+import {
+  getCategorySlug,
+  normalizeComparableSlug,
+} from "@lib/util/slug"
 import { HttpTypes } from "@medusajs/types"
 
 const flattenCategories = (
@@ -28,18 +32,26 @@ export const listCategories = async (query?: Record<string, any>) => {
       {
         query: {
           fields:
-            "*category_children, *products, *parent_category, *parent_category.parent_category, metadata",
+            "id,name,handle,description,metadata,parent_category_id,*category_children,*parent_category",
           limit,
           ...query,
         },
-        cache: "no-store",
+        cache: "force-cache",
+        next: {
+          revalidate: 300,
+          tags: ["categories"],
+        },
       }
     )
     .then(({ product_categories }) => product_categories)
 }
 
-export const getCategoryByHandle = async (categoryHandle: string[]) => {
+export const getCategoryByHandle = async (
+  categoryHandle: string[],
+  localeSegment: string = "ar"
+) => {
   const requestedPath = normalizeCategoryPath(categoryHandle.join("/"))
+  const requestedComparable = normalizeComparableSlug(requestedPath)
   const categories = await listCategories({ limit: 1000 })
   const allCategories = flattenCategories(categories || [])
 
@@ -51,9 +63,18 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
         ? normalizeCategoryPath(metadata.source_page_link)
         : ""
 
+    const slugAr = normalizeComparableSlug(getCategorySlug(category, "ar"))
+    const slugEn = normalizeComparableSlug(getCategorySlug(category, "en"))
+    const localeSlug = normalizeComparableSlug(
+      getCategorySlug(category, localeSegment)
+    )
+
     return (
       categoryHandle === requestedPath ||
-      sourcePageLink === requestedPath
+      sourcePageLink === requestedPath ||
+      requestedComparable === slugAr ||
+      requestedComparable === slugEn ||
+      requestedComparable === localeSlug
     )
   })
 }

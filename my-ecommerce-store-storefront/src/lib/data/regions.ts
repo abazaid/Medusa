@@ -2,6 +2,7 @@
 
 import { sdk } from "@lib/config"
 import medusaError from "@lib/util/medusa-error"
+import { toStoreCountryCode } from "@lib/util/slug"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
@@ -49,8 +50,10 @@ const regionMap = new Map<string, HttpTypes.StoreRegion>()
 
 export const getRegion = async (countryCode: string) => {
   try {
-    if (regionMap.has(countryCode)) {
-      return regionMap.get(countryCode)
+    const storeCountryCode = toStoreCountryCode(countryCode)
+
+    if (regionMap.has(storeCountryCode)) {
+      return regionMap.get(storeCountryCode)
     }
 
     const regions = await listRegions()
@@ -66,11 +69,13 @@ export const getRegion = async (countryCode: string) => {
         }
 
         regionMap.set(c.iso_2 ?? "", region)
+        regionMap.set("ar", region)
+        regionMap.set("en", region)
       })
     })
 
-    const region = countryCode
-      ? regionMap.get(countryCode)
+    const region = storeCountryCode
+      ? regionMap.get(storeCountryCode)
       : regionMap.get("sa")
 
     return region

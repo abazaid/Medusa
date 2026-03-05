@@ -1,6 +1,7 @@
 "use client"
 
 import { useDeferredValue, useState } from "react"
+import Image from "next/image"
 
 import type { Brand } from "@lib/data/brands"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -158,9 +159,11 @@ export default function BrandsArchive({
                     className="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_16px_34px_rgba(15,23,42,0.08)]"
                   >
                     <div className="flex h-24 items-center justify-center rounded-2xl bg-slate-50 p-4">
-                      <img
+                      <Image
                         src={brand.logo}
                         alt={brandName}
+                        width={160}
+                        height={64}
                         className="max-h-16 max-w-full object-contain"
                       />
                     </div>

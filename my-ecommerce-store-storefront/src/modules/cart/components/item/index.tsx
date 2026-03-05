@@ -12,6 +12,8 @@ import LineItemUnitPrice from "@modules/common/components/line-item-unit-price"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Spinner from "@modules/common/icons/spinner"
 import Thumbnail from "@modules/products/components/thumbnail"
+import { getProductSlug } from "@lib/util/slug"
+import { useParams } from "next/navigation"
 import { useState } from "react"
 
 type ItemProps = {
@@ -21,6 +23,9 @@ type ItemProps = {
 }
 
 const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
+  const params = useParams()
+  const localeSegment =
+    typeof params.countryCode === "string" ? params.countryCode : "ar"
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,12 +48,20 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
   // TODO: Update this to grab the actual max inventory
   const maxQtyFromInventory = 10
   const maxQuantity = item.variant?.manage_inventory ? 10 : maxQtyFromInventory
+  const productSlug = getProductSlug(
+    {
+      title: item.product_title || "",
+      handle: item.product_handle || "",
+      metadata: null,
+    },
+    localeSegment
+  )
 
   return (
     <Table.Row className="w-full" data-testid="product-row">
       <Table.Cell className="!pl-0 p-4 w-24">
         <LocalizedClientLink
-          href={`/products/${item.product_handle}`}
+          href={`/products/${encodeURIComponent(productSlug)}`}
           className={clx("flex", {
             "w-16": type === "preview",
             "small:w-24 w-12": type === "full",

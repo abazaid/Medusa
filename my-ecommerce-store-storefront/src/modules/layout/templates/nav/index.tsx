@@ -2,9 +2,11 @@ import { Suspense } from "react"
 
 import { listCategories } from "@lib/data/categories"
 import { getLocale } from "@lib/data/locale-actions"
+import { getCategorySlug } from "@lib/util/slug"
 import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CartButton from "@modules/layout/components/cart-button"
+import LanguageSwitcher from "@modules/layout/components/language-switcher"
 import NavSearchAutocomplete from "@modules/layout/components/nav-search-autocomplete"
 
 type MenuItem = {
@@ -29,7 +31,8 @@ const normalize = (value?: string | null) => (value || "").trim().toLowerCase()
 
 const resolveCategoryHref = (
   categories: HttpTypes.StoreProductCategory[],
-  candidates?: string[]
+  candidates?: string[],
+  localeSegment: string = "ar"
 ) => {
   if (!candidates?.length) {
     return "/store"
@@ -45,7 +48,7 @@ const resolveCategoryHref = (
   })
 
   if (exact?.handle) {
-    return `/categories/${encodeURIComponent(exact.handle)}`
+    return `/categories/${encodeURIComponent(getCategorySlug(exact, localeSegment))}`
   }
 
   const fuzzy = all.find((category) => {
@@ -61,7 +64,9 @@ const resolveCategoryHref = (
     )
   })
 
-  return fuzzy?.handle ? `/categories/${encodeURIComponent(fuzzy.handle)}` : "/store"
+  return fuzzy?.handle
+    ? `/categories/${encodeURIComponent(getCategorySlug(fuzzy, localeSegment))}`
+    : "/store"
 }
 
 const topMenuItems: MenuItem[] = [
@@ -108,7 +113,7 @@ const topMenuItems: MenuItem[] = [
     categoryCandidates: ["ايكوس-جهاز-ايكوس-ايكوس-السعودية-iqos-saudi", "ايكوس", "iqos"],
   },
   { ar: "المدونة", en: "BLOGS", href: "/blog" },
-  { ar: "الأدلة", en: "GUIDES", href: "/store" },
+  { ar: "الأدلة", en: "GUIDES", href: "/landing" },
   {
     ar: "عرض متعددة",
     en: "MULTIBUY",
@@ -187,6 +192,7 @@ export default async function Nav() {
             <NavSearchAutocomplete placeholder={labels.searchPlaceholder} />
 
             <div className="flex items-center gap-5 text-white">
+              <LanguageSwitcher currentLocale={currentLocale} />
               <LocalizedClientLink
                 href="/account"
                 className="hidden flex-col text-sm leading-5 small:flex"
@@ -215,7 +221,9 @@ export default async function Nav() {
         <div className="content-container border-b border-white/10 py-3">
           <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap">
             {topMenuItems.map((item) => {
-              const href = item.href || resolveCategoryHref(categories, item.categoryCandidates)
+              const href =
+                item.href ||
+                resolveCategoryHref(categories, item.categoryCandidates, currentLocale)
 
               return (
                 <LocalizedClientLink

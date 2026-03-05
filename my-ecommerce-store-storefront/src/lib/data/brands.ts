@@ -62,7 +62,7 @@ const normalizeBrandValue = (value?: string | null) =>
   (value || "")
     .trim()
     .normalize("NFKD")
-    .replace(/[^\p{L}\p{N}]+/gu, "")
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9]+/g, "")
     .toLowerCase()
 
 export const resolveBrand = (value?: string | null) => {

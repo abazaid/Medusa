@@ -1,7 +1,11 @@
 import { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { cache } from "react"
 import { listProducts } from "@lib/data/products"
-import { getRegion, listRegions } from "@lib/data/regions"
+import { resolveProductIdFromSlugIndex } from "@lib/data/product-slug-index"
+import { getRegion } from "@lib/data/regions"
+import { getBaseURL } from "@lib/util/env"
+import { getProductSlug, normalizeComparableSlug, stripSkuSuffix } from "@lib/util/slug"
 import ProductTemplate from "@modules/products/templates"
 import { HttpTypes } from "@medusajs/types"
 
@@ -10,79 +14,114 @@ type Props = {
   searchParams: Promise<{ v_id?: string }>
 }
 
-export async function generateStaticParams() {
-  try {
-    const countryCodes = await listRegions().then((regions) =>
-      regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
-    )
+const findProductBySlug = cache(async (countryCode: string, rawHandle: string) => {
+  const normalizedTarget = normalizeComparableSlug(rawHandle)
+  const decodedHandle = decodeURIComponent(rawHandle)
+  const exactCandidates = Array.from(
+    new Set([decodedHandle, stripSkuSuffix(decodedHandle)].filter(Boolean))
+  )
 
-    if (!countryCodes) {
-      return []
+  for (const candidate of exactCandidates) {
+    const exactMatch = await listProducts({
+      countryCode,
+      queryParams: { handle: candidate },
+    }).then(({ response }) => response.products[0])
+
+    if (exactMatch) {
+      return exactMatch
     }
+  }
 
-    const promises = countryCodes.map(async (country) => {
-      const { response } = await listProducts({
-        countryCode: country,
-        queryParams: { limit: 100, fields: "handle" },
-      })
+  const searchCandidates = Array.from(
+    new Set([
+      stripSkuSuffix(decodedHandle).replace(/-/g, " "),
+    ].filter(Boolean))
+  )
 
-      return {
-        country,
-        products: response.products,
-      }
+  for (const q of searchCandidates) {
+    const { response } = await listProducts({
+      countryCode,
+      queryParams: {
+        q,
+        limit: 30,
+        fields: "id,handle,title,metadata",
+      },
     })
 
-    const countryProducts = await Promise.all(promises)
-
-    return countryProducts
-      .flatMap((countryData) =>
-        countryData.products.map((product) => ({
-          countryCode: countryData.country,
-          handle: product.handle,
-        }))
+    const matched = (response.products || []).find((product) => {
+      const slugAr = normalizeComparableSlug(getProductSlug(product, "ar"))
+      const slugEn = normalizeComparableSlug(getProductSlug(product, "en"))
+      const handleRaw = normalizeComparableSlug(product.handle || "")
+      const handleClean = normalizeComparableSlug(stripSkuSuffix(product.handle || ""))
+      return (
+        normalizedTarget === slugAr ||
+        normalizedTarget === slugEn ||
+        normalizedTarget === handleRaw ||
+        normalizedTarget === handleClean
       )
-      .filter((param) => param.handle)
-  } catch (error) {
-    console.error(
-      `Failed to generate static paths for product pages: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }.`
-    )
-    return []
+    })
+
+    if (matched?.id) {
+      const fullProduct = await listProducts({
+        countryCode,
+        queryParams: {
+          id: [matched.id],
+          limit: 1,
+        },
+      }).then(({ response }) => response.products[0])
+
+      if (fullProduct) {
+        return fullProduct
+      }
+    }
   }
-}
+
+  const indexedId = await resolveProductIdFromSlugIndex({
+    countryCode,
+    rawSlug: decodedHandle,
+  })
+
+  if (indexedId) {
+    const fullProduct = await listProducts({
+      countryCode,
+      queryParams: {
+        id: [indexedId],
+        limit: 1,
+      },
+    }).then(({ response }) => response.products[0])
+
+    if (fullProduct) {
+      return fullProduct
+    }
+  }
+
+  return undefined
+})
 
 function getImagesForVariant(
   product: HttpTypes.StoreProduct,
   selectedVariantId?: string
 ) {
+  const fallbackImages = product.images || []
+
   if (!selectedVariantId || !product.variants) {
-    return product.images
+    return fallbackImages
   }
 
-  const variant = product.variants!.find((v) => v.id === selectedVariantId)
-  if (!variant || !variant.images.length) {
-    return product.images
+  const variant = product.variants.find((v) => v.id === selectedVariantId)
+  if (!variant || !variant.images?.length) {
+    return fallbackImages
   }
 
   const imageIdsMap = new Map(variant.images.map((i) => [i.id, true]))
-  return product.images!.filter((i) => imageIdsMap.has(i.id))
+  return fallbackImages.filter((i) => imageIdsMap.has(i.id))
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
   const { handle } = params
-  const region = await getRegion(params.countryCode)
 
-  if (!region) {
-    notFound()
-  }
-
-  const product = await listProducts({
-    countryCode: params.countryCode,
-    disableCache: true,
-    queryParams: { handle },
-  }).then(({ response }) => response.products[0])
+  const product = await findProductBySlug(params.countryCode, handle)
 
   if (!product) {
     notFound()
@@ -105,13 +144,26 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       ? metadata.meta_description.trim()
       : product.description ||
         `Shop ${product.title} at Vape Hub KSA. Premium vape products with fast delivery across Saudi Arabia.`
+  const canonicalSlug = getProductSlug(product, params.countryCode)
+  const canonical = `${getBaseURL()}/${params.countryCode}/products/${encodeURIComponent(canonicalSlug)}`
+  const arSlug = getProductSlug(product, "ar")
+  const enSlug = getProductSlug(product, "en")
 
   return {
     title: metaTitle,
     description: metaDescription,
+    alternates: {
+      canonical,
+      languages: {
+        ar: `${getBaseURL()}/ar/products/${encodeURIComponent(arSlug)}`,
+        en: `${getBaseURL()}/en/products/${encodeURIComponent(enSlug)}`,
+        "x-default": `${getBaseURL()}/ar/products/${encodeURIComponent(arSlug)}`,
+      },
+    },
     openGraph: {
       title: metaTitle,
       description: metaDescription,
+      url: canonical,
       images: product.thumbnail ? [{ url: product.thumbnail }] : [],
       type: "website",
     },
@@ -135,17 +187,24 @@ export default async function ProductPage(props: Props) {
     notFound()
   }
 
-  const pricedProduct = await listProducts({
-    countryCode: params.countryCode,
-    disableCache: true,
-    queryParams: { handle: params.handle },
-  }).then(({ response }) => response.products[0])
-
-  const images = getImagesForVariant(pricedProduct, selectedVariantId)
+  const pricedProduct = await findProductBySlug(params.countryCode, params.handle)
 
   if (!pricedProduct) {
     notFound()
   }
+  const canonicalSlug = getProductSlug(pricedProduct, params.countryCode)
+  if (
+    normalizeComparableSlug(params.handle) !==
+    normalizeComparableSlug(canonicalSlug)
+  ) {
+    const suffix = selectedVariantId
+      ? `?v_id=${encodeURIComponent(selectedVariantId)}`
+      : ""
+    redirect(
+      `/${params.countryCode}/products/${encodeURIComponent(canonicalSlug)}${suffix}`
+    )
+  }
+  const images = getImagesForVariant(pricedProduct, selectedVariantId)
 
   return (
     <ProductTemplate
