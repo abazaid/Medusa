@@ -7,6 +7,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 type ProductInfoProps = {
   product: HttpTypes.StoreProduct
   countryCode: string
+  showDescription?: boolean
 }
 
 const sanitizeDescription = (value?: string | null) =>
@@ -15,7 +16,11 @@ const sanitizeDescription = (value?: string | null) =>
     .replace(/ on\w+="[^"]*"/gi, "")
     .replace(/ on\w+='[^']*'/gi, "")
 
-const ProductInfo = ({ product, countryCode }: ProductInfoProps) => {
+const ProductInfo = ({
+  product,
+  countryCode,
+  showDescription = true,
+}: ProductInfoProps) => {
   const descriptionHtml = sanitizeDescription(product.description)
   const metadata = (product.metadata as Record<string, unknown> | null) || {}
   const isArabic = countryCode.toLowerCase() === "ar"
@@ -72,7 +77,7 @@ const ProductInfo = ({ product, countryCode }: ProductInfoProps) => {
           </div>
         )}
 
-        {descriptionHtml ? (
+        {showDescription && descriptionHtml ? (
           <div
             className="text-medium text-ui-fg-subtle leading-8 break-words [&_a]:text-primary-700 [&_a]:underline [&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mt-6 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-bold [&_iframe]:w-full [&_iframe]:min-h-[220px] [&_iframe]:rounded-2xl [&_li]:mb-2 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pr-6 [&_p]:mb-4 [&_strong]:font-bold [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pr-6"
             data-testid="product-description"

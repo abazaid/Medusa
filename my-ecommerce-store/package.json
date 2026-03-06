@@ -22,6 +22,7 @@
     "report:product-seo": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/report-product-seo.ts",
     "refresh:product-seo": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/refresh-product-seo.ts",
     "normalize:slugs": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/normalize-store-slugs.ts",
+    "classify:product-highlights": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/classify-product-highlights.ts",
     "rewrite:product-links": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/rewrite-product-description-links.ts",
     "sync:categories": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/create-vape-categories.ts",
     "seed": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/seed.ts",

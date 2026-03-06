@@ -1,7 +1,10 @@
+ "use client"
+
 import { HttpTypes } from "@medusajs/types"
 import { Container } from "@medusajs/ui"
 import { buildProductImageAlt } from "@lib/util/image-alt"
 import Image from "next/image"
+import { useState } from "react"
 
 type ImageGalleryProps = {
   images: HttpTypes.StoreProductImage[]
@@ -10,40 +13,72 @@ type ImageGalleryProps = {
 }
 
 const ImageGallery = ({ images, productTitle = "", locale = "ar" }: ImageGalleryProps) => {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const safeImages = images?.length ? images : []
+  const activeImage = safeImages[activeIndex] || safeImages[0]
+
+  if (!activeImage) {
+    return null
+  }
+
   return (
-    <div className="flex items-start relative">
-      <div className="flex flex-col flex-1 small:mx-16 gap-y-4">
-        {images.map((image, index) => {
-          return (
-            <Container
+    <div className="w-full">
+      <Container className="relative aspect-[16/14] w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
+        {!!activeImage.url && (
+          <Image
+            src={activeImage.url}
+            priority
+            className="absolute inset-0"
+            alt={buildProductImageAlt({
+              productTitle,
+              context:
+                locale.toLowerCase() === "ar"
+                  ? `صورة المنتج ${activeIndex + 1}`
+                  : `product image ${activeIndex + 1}`,
+              locale,
+            })}
+            fill
+            sizes="(max-width: 768px) 100vw, 58vw"
+            style={{
+              objectFit: "contain",
+            }}
+          />
+        )}
+      </Container>
+
+      {safeImages.length > 1 ? (
+        <div className="mt-4 grid grid-cols-6 gap-2">
+          {safeImages.slice(0, 12).map((image, index) => (
+            <button
               key={image.id}
-              className="relative aspect-[29/34] w-full overflow-hidden bg-ui-bg-subtle"
-              id={image.id}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              className={`relative aspect-square overflow-hidden rounded border ${
+                index === activeIndex
+                  ? "border-primary-500 ring-2 ring-primary-100"
+                  : "border-slate-200"
+              }`}
             >
               {!!image.url && (
                 <Image
                   src={image.url}
-                  priority={index <= 2 ? true : false}
-                  className="absolute inset-0 rounded-rounded"
                   alt={buildProductImageAlt({
                     productTitle,
                     context:
                       locale.toLowerCase() === "ar"
-                        ? `صورة المنتج ${index + 1}`
-                        : `product image ${index + 1}`,
+                        ? `صورة مصغرة ${index + 1}`
+                        : `thumbnail ${index + 1}`,
                     locale,
                   })}
                   fill
-                  sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
-                  style={{
-                    objectFit: "cover",
-                  }}
+                  sizes="80px"
+                  style={{ objectFit: "cover" }}
                 />
               )}
-            </Container>
-          )
-        })}
-      </div>
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

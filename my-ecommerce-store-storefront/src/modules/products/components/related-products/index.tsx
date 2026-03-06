@@ -7,11 +7,15 @@ import Product from "../product-preview"
 type RelatedProductsProps = {
   product: HttpTypes.StoreProduct
   countryCode: string
+  title?: string
+  subtitle?: string
 }
 
 export default async function RelatedProducts({
   product,
   countryCode,
+  title = "Related products",
+  subtitle = "You might also want to check out these products.",
 }: RelatedProductsProps) {
   const region = await getRegion(countryCode)
 
@@ -52,10 +56,10 @@ export default async function RelatedProducts({
     <div className="product-page-constraint">
       <div className="flex flex-col items-center text-center mb-16">
         <span className="text-base-regular text-gray-600 mb-6">
-          Related products
+          {title}
         </span>
         <p className="text-2xl-regular text-ui-fg-base max-w-lg">
-          You might also want to check out these products.
+          {subtitle}
         </p>
       </div>
 
