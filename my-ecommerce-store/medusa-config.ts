@@ -2,7 +2,7 @@ import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
-const modules = []
+const modules: { resolve: string }[] = []
 
 if (process.env.ENABLE_BLOG_MODULE === "true") {
   modules.push({

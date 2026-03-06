@@ -713,7 +713,7 @@ export const importProductsFromWorkbook = async ({
         })
 
     const inventoryLevels: InventoryLevelInput[] = []
-    const variants = []
+    const variants: any[] = []
 
     for (let index = 0; index < rowsForVariants.length; index += 1) {
       const variantRow = rowsForVariants[index]
