@@ -23,15 +23,19 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
   disabled,
 }) => {
   const filteredOptions = (option.values ?? []).map((v) => v.value)
+  const selectId = `product-option-${option.id}`
 
   return (
     <div className="flex flex-col gap-y-2">
-      <span className="text-sm break-words">{title || "Select"}</span>
+      <label htmlFor={selectId} className="text-sm break-words">
+        {title || "Select"}
+      </label>
       <div
         className="w-full"
         data-testid={dataTestId}
       >
         <select
+          id={selectId}
           value={current ?? ""}
           onChange={(event) => {
             if (event.target.value) {
@@ -39,7 +43,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
             }
           }}
           disabled={disabled}
-          className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none ring-0 transition focus:border-sky-500"
+          className="h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none ring-0 transition focus:border-sky-500"
           data-testid="option-select"
         >
           <option value="">{placeholder || title || "Select"}</option>

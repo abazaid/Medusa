@@ -28,6 +28,7 @@ const ImageGallery = ({ images, productTitle = "", locale = "ar" }: ImageGallery
           <Image
             src={activeImage.url}
             priority
+            fetchPriority="high"
             className="absolute inset-0"
             alt={buildProductImageAlt({
               productTitle,

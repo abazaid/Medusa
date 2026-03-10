@@ -222,27 +222,34 @@ export default function ProductActions({
           <div className="flex w-fit items-center rounded-md border border-slate-300">
             <button
               type="button"
-              className="h-9 w-9 text-lg"
+              className="h-11 w-11 text-lg"
+              aria-label={isArabic ? "ØªÙ‚Ù„ÙŠÙ„ Ø§Ù„ÙƒÙ…ÙŠØ©" : "Decrease quantity"}
               onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
               disabled={isAdding || !!disabled}
             >
               -
             </button>
+            <label htmlFor="product-quantity-input" className="sr-only">
+              {isArabic ? "Ø§Ù„ÙƒÙ…ÙŠØ©" : "Quantity"}
+            </label>
             <input
+              id="product-quantity-input"
               type="number"
               min={1}
               value={quantity}
+              aria-label={isArabic ? "Ø§Ù„ÙƒÙ…ÙŠØ©" : "Quantity"}
               onChange={(event) => {
                 const value = Number(event.target.value)
                 if (!Number.isNaN(value) && value > 0) {
                   setQuantity(Math.floor(value))
                 }
               }}
-              className="h-9 w-16 border-x border-slate-300 text-center outline-none"
+              className="h-11 w-16 border-x border-slate-300 text-center outline-none"
             />
             <button
               type="button"
-              className="h-9 w-9 text-lg"
+              className="h-11 w-11 text-lg"
+              aria-label={isArabic ? "Ø²ÙŠØ§Ø¯Ø© Ø§Ù„ÙƒÙ…ÙŠØ©" : "Increase quantity"}
               onClick={() => setQuantity((prev) => prev + 1)}
               disabled={isAdding || !!disabled}
             >
