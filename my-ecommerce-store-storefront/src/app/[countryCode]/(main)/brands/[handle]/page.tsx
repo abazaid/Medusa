@@ -18,6 +18,8 @@ type PageProps = {
   params: Promise<{ countryCode: string; handle: string }>
 }
 
+export const dynamic = "force-dynamic"
+
 type BrandProductsCacheEntry = {
   products: any[]
   expiresAt: number
