@@ -245,11 +245,11 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   const deliveryCards =
     locale === "ar"
       ? [
-          "اطلب قبل 9 مساءً للشحن السريع",
+          "اطلب قبل 6 مساءً للشحن السريع",
           "توصيل سريع داخل السعودية",
         ]
       : [
-          "Order before 9 PM for faster dispatch",
+          "Order before 6 PM for faster dispatch",
           "Fast delivery across Saudi Arabia",
         ]
 

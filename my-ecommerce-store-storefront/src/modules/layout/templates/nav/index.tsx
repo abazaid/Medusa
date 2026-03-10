@@ -138,13 +138,13 @@ const trustBarItems = {
     "توصيل مجاني سريع",
     "نشحن 7 أيام بالأسبوع",
     "تقييمات ممتازة",
-    "شحن في نفس اليوم حتى 9 مساءً",
+    "شحن في نفس اليوم حتى 6 مساءً",
   ],
   en: [
     "FREE FAST DELIVERY",
     "WE SHIP 7 DAYS A WEEK",
     "EXCELLENT REVIEWS",
-    "SAME-DAY DISPATCH UP TO 9PM",
+    "SAME-DAY DISPATCH UP TO 6PM",
   ],
 }
 
