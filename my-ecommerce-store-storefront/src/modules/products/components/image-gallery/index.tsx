@@ -3,6 +3,7 @@
 import { HttpTypes } from "@medusajs/types"
 import { Container } from "@medusajs/ui"
 import { buildProductImageAlt } from "@lib/util/image-alt"
+import { toProxyImageUrl } from "@lib/util/image-proxy"
 import Image from "next/image"
 import { useState } from "react"
 
@@ -16,6 +17,10 @@ const ImageGallery = ({ images, productTitle = "", locale = "ar" }: ImageGallery
   const [activeIndex, setActiveIndex] = useState(0)
   const safeImages = images?.length ? images : []
   const activeImage = safeImages[activeIndex] || safeImages[0]
+  const activeImageSrc = toProxyImageUrl({
+    url: activeImage?.url,
+    title: productTitle,
+  })
 
   if (!activeImage) {
     return null
@@ -24,9 +29,9 @@ const ImageGallery = ({ images, productTitle = "", locale = "ar" }: ImageGallery
   return (
     <div className="w-full">
       <Container className="relative aspect-[16/14] w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
-        {!!activeImage.url && (
+        {!!activeImageSrc && (
           <Image
-            src={activeImage.url}
+            src={activeImageSrc}
             priority
             fetchPriority="high"
             className="absolute inset-0"
@@ -62,7 +67,10 @@ const ImageGallery = ({ images, productTitle = "", locale = "ar" }: ImageGallery
             >
               {!!image.url && (
                 <Image
-                  src={image.url}
+                  src={toProxyImageUrl({
+                    url: image.url,
+                    title: `${productTitle}-${index + 1}`,
+                  })}
                   alt={buildProductImageAlt({
                     productTitle,
                     context:
