@@ -17,8 +17,6 @@ const normalizePathname = (pathname: string) => {
     normalized = normalized.slice(0, -1)
   }
 
-  normalized = normalized.replace(/[A-Z]/g, (char) => char.toLowerCase())
-
   return normalized
 }
 

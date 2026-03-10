@@ -56,3 +56,5 @@ dump.rdb
 /blob-report/
 /playwright/.cache/
 /playwright/.auth
+local-medusa-store.dump
+server-before-restore.dump

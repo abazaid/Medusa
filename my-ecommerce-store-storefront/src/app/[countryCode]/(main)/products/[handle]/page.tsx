@@ -14,6 +14,8 @@ type Props = {
   searchParams: Promise<{ v_id?: string }>
 }
 
+export const dynamic = "force-dynamic"
+
 const findProductBySlug = cache(async (countryCode: string, rawHandle: string) => {
   const normalizedTarget = normalizeComparableSlug(rawHandle)
   const decodedHandle = decodeURIComponent(rawHandle)

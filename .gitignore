@@ -1,0 +1,3 @@
+local-medusa-store.dump
+server-before-restore.dump
+*.dump
