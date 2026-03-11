@@ -6,8 +6,7 @@ import {
   SeoFieldTarget,
   buildSearchQuery,
   fetchTopSaudiSearchResults,
-  generateSeoFieldWithAI,
-  sanitizeSeoAiSettings,
+  generateSeoFieldWithOpenAI,
 } from "../../../../../modules/seo/engine"
 
 type ProductRecord = {
@@ -69,15 +68,6 @@ const pickSettings = (metadata?: Record<string, unknown> | null) => {
         ? seoSettings.product_description_instructions
         : DEFAULT_SEO_PROMPT_SETTINGS.product_description_instructions,
   }
-}
-
-const pickAiSettings = (metadata?: Record<string, unknown> | null) => {
-  const aiSettings =
-    metadata && typeof metadata.seo_ai_settings === "object"
-      ? (metadata.seo_ai_settings as Record<string, unknown>)
-      : null
-
-  return sanitizeSeoAiSettings(aiSettings)
 }
 
 const getCurrentSeoValues = (product: ProductRecord) => {
@@ -258,7 +248,6 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const settings = pickSettings(
     storeMetadata
   )
-  const aiSettings = pickAiSettings(storeMetadata)
   const searchQuery = buildSearchQuery(product)
 
   if (!searchQuery) {
@@ -286,13 +275,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       : [target]
 
   for (const currentTarget of targets) {
-    const generated = await generateSeoFieldWithAI({
+    const generated = await generateSeoFieldWithOpenAI({
       product,
       searchQuery,
       target: currentTarget,
       topResults,
       settings,
-      aiSettings,
     })
 
     generatedFields[currentTarget] = generated.content
