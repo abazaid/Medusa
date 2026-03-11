@@ -11,6 +11,16 @@ type SeoSettings = {
   product_description_instructions: string
 }
 
+type AiProvider = "openai" | "deepseek" | "claude"
+
+type SeoAiSettings = {
+  provider: AiProvider
+  model: string
+  openai_api_key: string
+  deepseek_api_key: string
+  claude_api_key: string
+}
+
 type SeoProduct = {
   id: string
   title: string
@@ -19,6 +29,8 @@ type SeoProduct = {
   meta_title: string
   meta_description: string
   seo_last_optimized_at: string
+  is_optimized: boolean
+  in_stock: boolean
 }
 
 type GenerateTarget = "meta_title" | "meta_description" | "description" | "all"
@@ -26,6 +38,13 @@ type GenerateTarget = "meta_title" | "meta_description" | "description" | "all"
 type SeoResponse = {
   products: SeoProduct[]
   settings: SeoSettings
+  ai_settings: SeoAiSettings
+  ai_provider_models: Record<AiProvider, string[]>
+}
+
+type GenerateResponse = {
+  message?: string
+  product?: Partial<SeoProduct>
 }
 
 type PreviewState = {
@@ -42,14 +61,6 @@ type PreviewState = {
     meta_description: string
     description: string
   }
-}
-
-type ImportSummary = {
-  deletedProducts: number
-  createdProducts: number
-  createdVariants: number
-  skippedProducts: number
-  skippedSkus: string[]
 }
 
 const boxStyle = {
@@ -102,31 +113,46 @@ const truncate = (value: string, limit: number) => {
 const stripHtml = (value: string) =>
   value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
 
-const fileToBase64 = async (file: File) => {
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  let binary = ""
-
-  for (let index = 0; index < bytes.length; index += 1) {
-    binary += String.fromCharCode(bytes[index])
-  }
-
-  return btoa(binary)
-}
-
 const SeoPage = () => {
   const [products, setProducts] = useState<SeoProduct[]>([])
   const [settings, setSettings] = useState<SeoSettings | null>(null)
+  const [aiSettings, setAiSettings] = useState<SeoAiSettings | null>(null)
+  const [aiProviderModels, setAiProviderModels] = useState<
+    Record<AiProvider, string[]>
+  >({
+    openai: [],
+    deepseek: [],
+    claude: [],
+  })
   const [loading, setLoading] = useState(true)
   const [savingSettings, setSavingSettings] = useState(false)
   const [actionKey, setActionKey] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [search, setSearch] = useState("")
-  const [filter, setFilter] = useState<"all" | "missing_meta" | "stale">("all")
+  const [filter, setFilter] = useState<
+    | "all"
+    | "missing_meta"
+    | "stale"
+    | "optimized"
+    | "not_optimized"
+    | "in_stock"
+    | "out_of_stock"
+  >("all")
   const [preview, setPreview] = useState<PreviewState | null>(null)
-  const [importFile, setImportFile] = useState<File | null>(null)
-  const [importing, setImporting] = useState(false)
-  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null)
+
+  const getResponseMessage = async (response: Response) => {
+    try {
+      const payload = (await response.json()) as { message?: string }
+      return payload.message || ""
+    } catch {
+      try {
+        return (await response.text()).trim()
+      } catch {
+        return ""
+      }
+    }
+  }
 
   const loadData = async () => {
     setLoading(true)
@@ -144,6 +170,8 @@ const SeoPage = () => {
       const payload = (await response.json()) as SeoResponse
       setProducts(payload.products)
       setSettings(payload.settings)
+      setAiSettings(payload.ai_settings)
+      setAiProviderModels(payload.ai_provider_models)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load SEO data.")
     } finally {
@@ -183,12 +211,33 @@ const SeoPage = () => {
         return Number.isNaN(lastUpdated.getTime()) || lastUpdated < staleThreshold
       }
 
+      if (filter === "optimized") {
+        return product.is_optimized
+      }
+
+      if (filter === "not_optimized") {
+        return !product.is_optimized
+      }
+
+      if (filter === "in_stock") {
+        return product.in_stock
+      }
+
+      if (filter === "out_of_stock") {
+        return !product.in_stock
+      }
+
       return true
     })
   }, [products, search, filter])
 
+  const getFirstModelForProvider = (provider: AiProvider) => {
+    const list = aiProviderModels[provider] || []
+    return list[0] || ""
+  }
+
   const saveSettings = async () => {
-    if (!settings) {
+    if (!settings || !aiSettings) {
       return
     }
 
@@ -203,14 +252,25 @@ const SeoPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify({
+          ...settings,
+          ai_provider: aiSettings.provider,
+          ai_model: aiSettings.model,
+          openai_api_key: aiSettings.openai_api_key,
+          deepseek_api_key: aiSettings.deepseek_api_key,
+          claude_api_key: aiSettings.claude_api_key,
+        }),
       })
 
       if (!response.ok) {
         throw new Error("Failed to save SEO instructions.")
       }
 
-      const payload = (await response.json()) as { settings: SeoSettings }
+      const payload = (await response.json()) as {
+        settings: SeoSettings
+        ai_settings: SeoAiSettings
+        ai_provider_models: Record<AiProvider, string[]>
+      }
       setSettings(payload.settings)
       setMessage("تم حفظ تعليمات ChatGPT بنجاح.")
     } catch (err) {
@@ -219,6 +279,79 @@ const SeoPage = () => {
       )
     } finally {
       setSavingSettings(false)
+    }
+  }
+
+  const generateAndSave = async (productId: string, target: GenerateTarget) => {
+    setActionKey(`${productId}:${target}:generate`)
+    setMessage(
+      target === "all"
+        ? "جارٍ توليد كل الحقول لهذا المنتج..."
+        : "جارٍ توليد الحقل المطلوب..."
+    )
+    setError("")
+
+    try {
+      const response = await fetch(`/admin/seo/${productId}/generate`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          target,
+          preview: false,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorMessage = await getResponseMessage(response)
+        throw new Error(
+          errorMessage ||
+            (target === "all"
+              ? "Failed to generate all SEO fields."
+              : "Failed to generate SEO content.")
+        )
+      }
+
+      const payload = (await response.json()) as GenerateResponse
+      if (!payload.product) {
+        throw new Error("The server response did not include updated product data.")
+      }
+
+      setProducts((current) =>
+        current.map((product) =>
+          product.id === productId
+            ? {
+                ...product,
+                meta_title: payload.product?.meta_title ?? product.meta_title,
+                meta_description:
+                  payload.product?.meta_description ?? product.meta_description,
+                description: payload.product?.description ?? product.description,
+                seo_last_optimized_at:
+                  payload.product?.seo_last_optimized_at ??
+                  product.seo_last_optimized_at,
+                is_optimized:
+                  payload.product?.seo_last_optimized_at ??
+                  product.seo_last_optimized_at
+                    ? true
+                    : product.is_optimized,
+              }
+            : product
+        )
+      )
+
+      setMessage(
+        target === "all"
+          ? "تم توليد وحفظ كل الحقول لهذا المنتج."
+          : "تم توليد وحفظ الحقل بنجاح."
+      )
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to generate SEO content."
+      )
+    } finally {
+      setActionKey("")
     }
   }
 
@@ -400,50 +533,6 @@ const SeoPage = () => {
     }
   }
 
-  const uploadProductsFile = async () => {
-    if (!importFile) {
-      setError("اختر ملف Excel أولًا.")
-      return
-    }
-
-    setImporting(true)
-    setMessage("")
-    setError("")
-    setImportSummary(null)
-
-    try {
-      const response = await fetch("/admin/seo/import-products", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          file_name: importFile.name,
-          file_base64: await fileToBase64(importFile),
-        }),
-      })
-
-      const payload = (await response.json()) as {
-        message?: string
-        summary?: ImportSummary
-      }
-
-      if (!response.ok || !payload.summary) {
-        throw new Error(payload.message || "فشل استيراد المنتجات.")
-      }
-
-      setImportSummary(payload.summary)
-      setImportFile(null)
-      setMessage("تم استيراد الملف بنجاح مع تخطي المنتجات المكررة حسب SKU.")
-      await loadData()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "فشل استيراد المنتجات.")
-    } finally {
-      setImporting(false)
-    }
-  }
-
   return (
     <div style={{ padding: 24, background: "#f9fafb", minHeight: "100%" }}>
       <div
@@ -458,7 +547,7 @@ const SeoPage = () => {
         <div>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>SEO</h1>
           <p style={{ margin: "8px 0 0", color: "#4b5563", fontSize: 14 }}>
-            إدارة SEO للمنتجات ورفع ملفات Excel مستقبلًا بنفس أسلوب الربط الحالي.
+            إدارة SEO للمنتجات: توليد المحتوى، الإعدادات، ومتابعة التحسين.
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -496,6 +585,22 @@ const SeoPage = () => {
         </div>
       ) : null}
 
+      {actionKey ? (
+        <div
+          style={{
+            ...boxStyle,
+            borderColor: "#fde68a",
+            background: "#fffbeb",
+            color: "#92400e",
+            padding: 12,
+            marginBottom: 16,
+            fontWeight: 600,
+          }}
+        >
+          جاري تنفيذ العملية... لا تغلق الصفحة حتى يكتمل التوليد.
+        </div>
+      ) : null}
+
       {error ? (
         <div
           style={{
@@ -519,8 +624,131 @@ const SeoPage = () => {
           تعليمات ثابتة يأخذها التوليد بعين الاعتبار عند كتابة الميتا ووصف المنتج.
         </p>
 
-        {settings ? (
+        {settings && aiSettings ? (
           <div style={{ display: "grid", gap: 16 }}>
+            <div
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 12,
+                background: "#f9fafb",
+                padding: 12,
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <strong style={{ fontSize: 14 }}>AI Provider Settings</strong>
+
+              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+                <label style={{ display: "grid", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>Provider</span>
+                  <select
+                    style={fieldStyle}
+                    value={aiSettings.provider}
+                    onChange={(event) => {
+                      const provider = event.target.value as AiProvider
+                      const firstModel = getFirstModelForProvider(provider)
+                      setAiSettings((current) =>
+                        current
+                          ? {
+                              ...current,
+                              provider,
+                              model:
+                                aiProviderModels[provider]?.includes(current.model)
+                                  ? current.model
+                                  : firstModel,
+                            }
+                          : current
+                      )
+                    }}
+                  >
+                    <option value="openai">OpenAI</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="claude">Claude</option>
+                  </select>
+                </label>
+
+                <label style={{ display: "grid", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>Model</span>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <select
+                      style={fieldStyle}
+                      value={aiSettings.model}
+                      onChange={(event) =>
+                        setAiSettings((current) =>
+                          current ? { ...current, model: event.target.value } : current
+                        )
+                      }
+                    >
+                      {(aiProviderModels[aiSettings.provider] || []).map((model) => (
+                        <option key={model} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      style={fieldStyle}
+                      value={aiSettings.model}
+                      placeholder="Or type custom model"
+                      onChange={(event) =>
+                        setAiSettings((current) =>
+                          current ? { ...current, model: event.target.value } : current
+                        )
+                      }
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>OpenAI API Key</span>
+                <input
+                  type="password"
+                  style={fieldStyle}
+                  value={aiSettings.openai_api_key}
+                  onChange={(event) =>
+                    setAiSettings((current) =>
+                      current
+                        ? { ...current, openai_api_key: event.target.value }
+                        : current
+                    )
+                  }
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>DeepSeek API Key</span>
+                <input
+                  type="password"
+                  style={fieldStyle}
+                  value={aiSettings.deepseek_api_key}
+                  onChange={(event) =>
+                    setAiSettings((current) =>
+                      current
+                        ? { ...current, deepseek_api_key: event.target.value }
+                        : current
+                    )
+                  }
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Claude API Key</span>
+                <input
+                  type="password"
+                  style={fieldStyle}
+                  value={aiSettings.claude_api_key}
+                  onChange={(event) =>
+                    setAiSettings((current) =>
+                      current
+                        ? { ...current, claude_api_key: event.target.value }
+                        : current
+                    )
+                  }
+                />
+              </label>
+            </div>
+
             <label style={{ display: "grid", gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>تعليمات عامة</span>
               <textarea
@@ -616,70 +844,7 @@ const SeoPage = () => {
         )}
       </section>
 
-      <section style={{ ...boxStyle, padding: 20, marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
-          رفع منتجات من Excel
-        </h2>
-        <p style={{ margin: "8px 0 16px", color: "#4b5563", fontSize: 14 }}>
-          ارفع ملف Excel بنفس الصيغة التي استخدمناها سابقًا. سيتم ربط المنتجات
-          بالموديلات الحالية من الماركات والتصنيفات، ولن يُعاد رفع أي منتج إذا
-          كان لديه SKU موجود مسبقًا.
-        </p>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <input
-            type="file"
-            accept=".xlsx"
-            onChange={(event) => setImportFile(event.target.files?.[0] || null)}
-            style={{ ...fieldStyle, maxWidth: 380 }}
-          />
-          <button
-            type="button"
-            style={buttonStyle}
-            onClick={() => void uploadProductsFile()}
-            disabled={!importFile || importing}
-          >
-            {importing ? "جارٍ الاستيراد..." : "رفع واستيراد"}
-          </button>
-        </div>
-
-        {importFile ? (
-          <div style={{ marginTop: 12, fontSize: 13, color: "#374151" }}>
-            الملف المحدد: {importFile.name}
-          </div>
-        ) : null}
-
-        {importSummary ? (
-          <div
-            style={{
-              marginTop: 16,
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              padding: 12,
-              background: "#f9fafb",
-              fontSize: 14,
-              lineHeight: 1.8,
-            }}
-          >
-            <div>تم إنشاء منتجات: {importSummary.createdProducts}</div>
-            <div>تم إنشاء Variants: {importSummary.createdVariants}</div>
-            <div>تم تخطي منتجات مكررة: {importSummary.skippedProducts}</div>
-            {!!importSummary.skippedSkus.length && (
-              <div>
-                أمثلة SKU متخطاة:{" "}
-                {truncate(importSummary.skippedSkus.join(", "), 180)}
-              </div>
-            )}
-          </div>
-        ) : null}
-      </section>
+      
 
       <section style={{ ...boxStyle, padding: 20 }}>
         <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
@@ -711,13 +876,26 @@ const SeoPage = () => {
             <select
               value={filter}
               onChange={(event) =>
-                setFilter(event.target.value as "all" | "missing_meta" | "stale")
+                setFilter(
+                  event.target.value as
+                    | "all"
+                    | "missing_meta"
+                    | "stale"
+                    | "optimized"
+                    | "not_optimized"
+                    | "in_stock"
+                    | "out_of_stock"
+                )
               }
               style={{ ...fieldStyle, maxWidth: 220 }}
             >
               <option value="all">كل المنتجات</option>
               <option value="missing_meta">الناقص منها ميتا</option>
               <option value="stale">التي لم تُحدّث منذ 30 يومًا</option>
+              <option value="optimized">تم تحسينها</option>
+              <option value="not_optimized">غير محسّنة</option>
+              <option value="in_stock">متوفر بالمخزون</option>
+              <option value="out_of_stock">غير متوفر بالمخزون</option>
             </select>
           </div>
         </div>
@@ -767,15 +945,75 @@ const SeoPage = () => {
                     >
                       {product.handle}
                     </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "4px 8px",
+                          borderRadius: 999,
+                          background: product.is_optimized ? "#dcfce7" : "#fee2e2",
+                          color: product.is_optimized ? "#166534" : "#991b1b",
+                        }}
+                      >
+                        {product.is_optimized ? "تم تحسينه" : "غير محسّن"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "4px 8px",
+                          borderRadius: 999,
+                          background: product.in_stock ? "#dbeafe" : "#e5e7eb",
+                          color: product.in_stock ? "#1d4ed8" : "#374151",
+                        }}
+                      >
+                        {product.in_stock ? "متوفر بالمخزون" : "غير متوفر بالمخزون"}
+                      </span>
+                      {actionKey.startsWith(`${product.id}:`) ? (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "4px 8px",
+                            borderRadius: 999,
+                            background: "#fef3c7",
+                            color: "#92400e",
+                          }}
+                        >
+                          جاري التوليد...
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       type="button"
-                      style={secondaryButtonStyle}
-                      disabled={!!actionKey}
-                      onClick={() => void requestPreview(product.id, "all")}
+                      style={{
+                        ...secondaryButtonStyle,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                      disabled={!!actionKey || !product.in_stock}
+                      onClick={() => void generateAndSave(product.id, "all")}
+                      title={
+                        product.in_stock
+                          ? "توليد كل الحقول لهذا المنتج"
+                          : "المنتج غير متوفر بالمخزون"
+                      }
                     >
-                      توليد الكل
+                      <Sparkles />
+                      {actionKey === `${product.id}:all:generate`
+                        ? "جارٍ توليد الكل..."
+                        : "توليد الكل"}
                     </button>
                     <div style={{ color: "#6b7280", fontSize: 12, paddingTop: 10 }}>
                       {product.seo_last_optimized_at
@@ -827,10 +1065,15 @@ const SeoPage = () => {
                         <button
                           type="button"
                           style={buttonStyle}
-                          disabled={!!actionKey}
-                          onClick={() => void requestPreview(product.id, field.key)}
+                          disabled={!!actionKey || !product.in_stock}
+                          onClick={() => void generateAndSave(product.id, field.key)}
+                          title={
+                            product.in_stock
+                              ? "توليد وحفظ"
+                              : "المنتج غير متوفر بالمخزون"
+                          }
                         >
-                          {actionKey === `${product.id}:${field.key}:preview`
+                          {actionKey === `${product.id}:${field.key}:generate`
                             ? "جارٍ التوليد..."
                             : "توليد"}
                         </button>
@@ -991,3 +1234,5 @@ export const config = defineRouteConfig({
 })
 
 export default SeoPage
+
+

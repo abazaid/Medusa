@@ -30,6 +30,16 @@ export type SeoPromptSettings = {
   product_description_instructions: string
 }
 
+export type AiProvider = "openai" | "deepseek" | "claude"
+
+export type SeoAiSettings = {
+  provider: AiProvider
+  model: string
+  openai_api_key: string
+  deepseek_api_key: string
+  claude_api_key: string
+}
+
 type GeneratedFieldResult = {
   content: string
   reasoning?: string
@@ -41,6 +51,81 @@ export const GOOGLE_GEO = "sa"
 export const GOOGLE_DEVICE = "mobile"
 export const SERP_TOP_RESULTS = 5
 export const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini"
+export const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini"
+export const DEFAULT_DEEPSEEK_MODEL =
+  process.env.DEEPSEEK_MODEL || "deepseek-chat"
+export const DEFAULT_CLAUDE_MODEL =
+  process.env.CLAUDE_MODEL || "claude-3-5-sonnet-latest"
+export const DEFAULT_AI_PROVIDER =
+  (process.env.SEO_AI_PROVIDER as AiProvider) || "openai"
+
+export const AI_PROVIDER_MODELS: Record<AiProvider, string[]> = {
+  openai: [
+    "gpt-4.1",
+    "gpt-4.1-mini",
+    "gpt-4.1-nano",
+    "gpt-4o",
+    "gpt-4o-mini",
+  ],
+  deepseek: ["deepseek-chat", "deepseek-reasoner"],
+  claude: [
+    "claude-3-7-sonnet-latest",
+    "claude-3-5-sonnet-latest",
+    "claude-3-5-haiku-latest",
+    "claude-3-opus-latest",
+  ],
+}
+
+const DEFAULT_PROVIDER_MODEL: Record<AiProvider, string> = {
+  openai: DEFAULT_OPENAI_MODEL,
+  deepseek: DEFAULT_DEEPSEEK_MODEL,
+  claude: DEFAULT_CLAUDE_MODEL,
+}
+
+const isAiProvider = (value: unknown): value is AiProvider =>
+  value === "openai" || value === "deepseek" || value === "claude"
+
+export const getDefaultSeoAiSettings = (): SeoAiSettings => {
+  const provider = isAiProvider(DEFAULT_AI_PROVIDER)
+    ? DEFAULT_AI_PROVIDER
+    : "openai"
+  const model = normalizeText(DEFAULT_PROVIDER_MODEL[provider])
+
+  return {
+    provider,
+    model: model || AI_PROVIDER_MODELS[provider][0],
+    openai_api_key: normalizeText(process.env.OPENAI_API_KEY),
+    deepseek_api_key: normalizeText(process.env.DEEPSEEK_API_KEY),
+    claude_api_key: normalizeText(process.env.CLAUDE_API_KEY),
+  }
+}
+
+export const sanitizeSeoAiSettings = (
+  raw?: Record<string, unknown> | null
+): SeoAiSettings => {
+  const defaults = getDefaultSeoAiSettings()
+  const provider = isAiProvider(raw?.provider) ? raw?.provider : defaults.provider
+  const model = normalizeText(
+    typeof raw?.model === "string" ? raw.model : defaults.model
+  )
+
+  return {
+    provider,
+    model: model || AI_PROVIDER_MODELS[provider][0],
+    openai_api_key:
+      typeof raw?.openai_api_key === "string"
+        ? normalizeText(raw.openai_api_key)
+        : defaults.openai_api_key,
+    deepseek_api_key:
+      typeof raw?.deepseek_api_key === "string"
+        ? normalizeText(raw.deepseek_api_key)
+        : defaults.deepseek_api_key,
+    claude_api_key:
+      typeof raw?.claude_api_key === "string"
+        ? normalizeText(raw.claude_api_key)
+        : defaults.claude_api_key,
+  }
+}
 
 export const DEFAULT_SEO_PROMPT_SETTINGS: SeoPromptSettings = {
   global_instructions:
@@ -306,19 +391,13 @@ const buildTargetSpecificConstraints = (
   ]
 }
 
-export const generateSeoFieldWithOpenAI = async (input: {
+const buildGenerationPrompt = (input: {
   product: ProductRecord
   searchQuery: string
   target: SeoFieldTarget
   topResults: Awaited<ReturnType<typeof fetchTopSaudiSearchResults>>
   settings: SeoPromptSettings
 }) => {
-  const openAiKey = process.env.OPENAI_API_KEY
-
-  if (!openAiKey) {
-    throw new Error("OPENAI_API_KEY is required to generate SEO content.")
-  }
-
   const product = input.product
   const metadata = (product.metadata || {}) as Record<string, unknown>
   const currentFieldValue = getCurrentFieldValue(product, input.target)
@@ -327,7 +406,7 @@ export const generateSeoFieldWithOpenAI = async (input: {
     .filter(Boolean)
     .join(" | ")
 
-  const prompt = [
+  return [
     "You are an elite ecommerce SEO strategist and Arabic product copywriter for a Saudi Arabian vape store.",
     input.settings.global_instructions,
     getFieldPrompt(input.target, input.settings),
@@ -338,25 +417,25 @@ export const generateSeoFieldWithOpenAI = async (input: {
     `Target field: ${input.target}`,
     `Product title: ${product.title}`,
     `Product handle: ${product.handle}`,
-    `Product type: ${normalizeText(product.type?.value) || "غير محدد"}`,
-    `Product categories: ${categoryNames || "غير محدد"}`,
+    `Product type: ${normalizeText(product.type?.value) || "Not specified"}`,
+    `Product categories: ${categoryNames || "Not specified"}`,
     `Current field value: ${truncate(
       input.target === "description"
         ? stripHtml(currentFieldValue)
         : normalizeText(currentFieldValue),
       1200
-    ) || "غير موجود"}`,
+    ) || "Not available"}`,
     `Current meta title: ${
       typeof metadata.meta_title === "string"
         ? normalizeText(metadata.meta_title)
-        : "غير موجود"
+        : "Not available"
     }`,
     `Current meta description: ${
       typeof metadata.meta_description === "string"
         ? normalizeText(metadata.meta_description)
-        : "غير موجود"
+        : "Not available"
     }`,
-    `Product description excerpt: ${truncate(stripHtml(product.description), 1200) || "غير موجود"}`,
+    `Product description excerpt: ${truncate(stripHtml(product.description), 1200) || "Not available"}`,
     `Google Saudi query used: ${input.searchQuery}`,
     "Top Google Saudi results:",
     ...input.topResults.map((result, index) =>
@@ -369,15 +448,63 @@ export const generateSeoFieldWithOpenAI = async (input: {
       ].join("\n")
     ),
   ].join("\n")
+}
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+const parseJsonFromModelResponse = (content: string) => {
+  const trimmed = (content || "").trim()
+
+  if (!trimmed) {
+    throw new Error("Model returned an empty response.")
+  }
+
+  const fenced = trimmed.match(/```json\s*([\s\S]*?)\s*```/i)
+  const candidate = fenced?.[1] || trimmed
+
+  try {
+    return JSON.parse(candidate) as GeneratedFieldResult
+  } catch {
+    const firstBrace = candidate.indexOf("{")
+    const lastBrace = candidate.lastIndexOf("}")
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      const possibleJson = candidate.slice(firstBrace, lastBrace + 1)
+      try {
+        return JSON.parse(possibleJson) as GeneratedFieldResult
+      } catch {
+        throw new Error(`Model response was not valid JSON: ${trimmed}`)
+      }
+    }
+    throw new Error(`Model response was not valid JSON: ${trimmed}`)
+  }
+}
+
+const getProviderApiKey = (settings: SeoAiSettings) => {
+  if (settings.provider === "openai") {
+    return settings.openai_api_key || normalizeText(process.env.OPENAI_API_KEY)
+  }
+
+  if (settings.provider === "deepseek") {
+    return settings.deepseek_api_key || normalizeText(process.env.DEEPSEEK_API_KEY)
+  }
+
+  return settings.claude_api_key || normalizeText(process.env.CLAUDE_API_KEY)
+}
+
+const requestOpenAiCompatible = async (input: {
+  endpoint: string
+  apiKey: string
+  model: string
+  prompt: string
+  temperature: number
+  providerLabel: string
+}) => {
+  const response = await fetch(input.endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${openAiKey}`,
+      Authorization: `Bearer ${input.apiKey}`,
     },
     body: JSON.stringify({
-      model: DEFAULT_MODEL,
+      model: input.model,
       response_format: {
         type: "json_object",
       },
@@ -389,36 +516,131 @@ export const generateSeoFieldWithOpenAI = async (input: {
         },
         {
           role: "user",
-          content: prompt,
+          content: input.prompt,
         },
       ],
-      temperature: input.target === "description" ? 0.9 : 0.7,
+      temperature: input.temperature,
     }),
   })
 
   if (!response.ok) {
     throw new Error(
-      `OpenAI request failed with status ${response.status}: ${await response.text()}`
+      `${input.providerLabel} request failed with status ${response.status}: ${await response.text()}`
     )
   }
 
   const payload = (await response.json()) as {
     choices?: { message?: { content?: string } }[]
   }
-  const content = payload.choices?.[0]?.message?.content
+
+  return payload.choices?.[0]?.message?.content || ""
+}
+
+const requestClaude = async (input: {
+  apiKey: string
+  model: string
+  prompt: string
+  temperature: number
+}) => {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": input.apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: input.model,
+      max_tokens: 1400,
+      temperature: input.temperature,
+      system:
+        "You generate high-performing Arabic ecommerce SEO and product copy for product pages. Always return valid JSON only.",
+      messages: [
+        {
+          role: "user",
+          content: input.prompt,
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Claude request failed with status ${response.status}: ${await response.text()}`
+    )
+  }
+
+  const payload = (await response.json()) as {
+    content?: {
+      type?: string
+      text?: string
+    }[]
+  }
+
+  return (
+    payload.content?.find((item) => item.type === "text")?.text ||
+    payload.content?.[0]?.text ||
+    ""
+  )
+}
+
+export const generateSeoFieldWithAI = async (input: {
+  product: ProductRecord
+  searchQuery: string
+  target: SeoFieldTarget
+  topResults: Awaited<ReturnType<typeof fetchTopSaudiSearchResults>>
+  settings: SeoPromptSettings
+  aiSettings?: SeoAiSettings
+}) => {
+  const aiSettings = sanitizeSeoAiSettings(input.aiSettings || null)
+  const providerApiKey = getProviderApiKey(aiSettings)
+
+  if (!providerApiKey) {
+    if (aiSettings.provider === "openai") {
+      throw new Error("OpenAI API key is required to generate SEO content.")
+    }
+    if (aiSettings.provider === "deepseek") {
+      throw new Error("DeepSeek API key is required to generate SEO content.")
+    }
+    throw new Error("Claude API key is required to generate SEO content.")
+  }
+
+  const prompt = buildGenerationPrompt(input)
+  const temperature = input.target === "description" ? 0.9 : 0.7
+  const model =
+    normalizeText(aiSettings.model) || AI_PROVIDER_MODELS[aiSettings.provider][0]
+  const content =
+    aiSettings.provider === "openai"
+      ? await requestOpenAiCompatible({
+          endpoint: "https://api.openai.com/v1/chat/completions",
+          apiKey: providerApiKey,
+          model,
+          prompt,
+          temperature,
+          providerLabel: "OpenAI",
+        })
+      : aiSettings.provider === "deepseek"
+      ? await requestOpenAiCompatible({
+          endpoint: "https://api.deepseek.com/chat/completions",
+          apiKey: providerApiKey,
+          model,
+          prompt,
+          temperature,
+          providerLabel: "DeepSeek",
+        })
+      : await requestClaude({
+          apiKey: providerApiKey,
+          model,
+          prompt,
+          temperature,
+        })
 
   if (!content) {
-    throw new Error("OpenAI returned an empty response.")
+    throw new Error("AI provider returned an empty response.")
   }
 
-  let parsed: GeneratedFieldResult
-
-  try {
-    parsed = JSON.parse(content) as GeneratedFieldResult
-  } catch {
-    throw new Error(`OpenAI response was not valid JSON: ${content}`)
-  }
-
+  const parsed = parseJsonFromModelResponse(content)
+  const currentFieldValue = getCurrentFieldValue(input.product, input.target)
   const normalizedContent =
     input.target === "description"
       ? (parsed.content || "").trim()
@@ -450,3 +672,21 @@ export const generateSeoFieldWithOpenAI = async (input: {
     reasoning: normalizeText(parsed.reasoning),
   }
 }
+
+export const generateSeoFieldWithOpenAI = async (input: {
+  product: ProductRecord
+  searchQuery: string
+  target: SeoFieldTarget
+  topResults: Awaited<ReturnType<typeof fetchTopSaudiSearchResults>>
+  settings: SeoPromptSettings
+}) =>
+  generateSeoFieldWithAI({
+    ...input,
+    aiSettings: sanitizeSeoAiSettings({
+      provider: "openai",
+      model: DEFAULT_OPENAI_MODEL,
+      openai_api_key: normalizeText(process.env.OPENAI_API_KEY),
+      deepseek_api_key: "",
+      claude_api_key: "",
+    }),
+  })
