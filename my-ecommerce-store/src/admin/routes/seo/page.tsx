@@ -29,6 +29,7 @@ type SeoProduct = {
   meta_title: string
   meta_description: string
   seo_last_optimized_at: string
+  seo_source?: string
   is_optimized: boolean
   in_stock: boolean
 }
@@ -283,9 +284,14 @@ const SeoPage = () => {
   }
 
   const generateAndSave = async (productId: string, target: GenerateTarget) => {
+    const product = products.find((item) => item.id === productId)
     setActionKey(`${productId}:${target}:generate`)
     setMessage(
-      target === "all"
+      product && !product.in_stock
+        ? target === "all"
+          ? "المنتج غير متوفر بالمخزون، ومع ذلك جارٍ توليد كل الحقول يدويًا..."
+          : "المنتج غير متوفر بالمخزون، ومع ذلك جارٍ التوليد يدويًا..."
+        : target === "all"
         ? "جارٍ توليد كل الحقول لهذا المنتج..."
         : "جارٍ توليد الحقل المطلوب..."
     )
@@ -1002,13 +1008,9 @@ const SeoPage = () => {
                         alignItems: "center",
                         gap: 6,
                       }}
-                      disabled={!!actionKey || !product.in_stock}
+                      disabled={!!actionKey}
                       onClick={() => void generateAndSave(product.id, "all")}
-                      title={
-                        product.in_stock
-                          ? "توليد كل الحقول لهذا المنتج"
-                          : "المنتج غير متوفر بالمخزون"
-                      }
+                      title="توليد كل الحقول لهذا المنتج"
                     >
                       <Sparkles />
                       {actionKey === `${product.id}:all:generate`
@@ -1065,13 +1067,9 @@ const SeoPage = () => {
                         <button
                           type="button"
                           style={buttonStyle}
-                          disabled={!!actionKey || !product.in_stock}
+                          disabled={!!actionKey}
                           onClick={() => void generateAndSave(product.id, field.key)}
-                          title={
-                            product.in_stock
-                              ? "توليد وحفظ"
-                              : "المنتج غير متوفر بالمخزون"
-                          }
+                          title="توليد وحفظ"
                         >
                           {actionKey === `${product.id}:${field.key}:generate`
                             ? "جارٍ التوليد..."

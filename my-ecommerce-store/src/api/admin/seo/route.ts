@@ -77,28 +77,42 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const products = ((data || []) as ProductRecord[]).map((product) => {
     const metadata = (product.metadata || {}) as Record<string, unknown>
     const variants = product.variants || []
-    const inStock = variants.some((variant) => {
-      const inventoryQuantity =
-        typeof variant.inventory_quantity === "number"
-          ? variant.inventory_quantity
-          : 0
-      const allowBackorder = variant.allow_backorder === true
-      const manageInventory = variant.manage_inventory === true
+    const hasNumericInventory = variants.some(
+      (variant) => typeof variant.inventory_quantity === "number"
+    )
 
-      if (allowBackorder) {
-        return true
-      }
+    const inStock =
+      variants.length === 0
+        ? true
+        : variants.some((variant) => {
+            const allowBackorder = variant.allow_backorder === true
+            const manageInventory = variant.manage_inventory === true
+            const inventoryQuantity =
+              typeof variant.inventory_quantity === "number"
+                ? variant.inventory_quantity
+                : null
 
-      if (!manageInventory) {
-        return true
-      }
+            if (allowBackorder) {
+              return true
+            }
 
-      return inventoryQuantity > 0
-    })
+            if (!manageInventory) {
+              return true
+            }
+
+            if (inventoryQuantity !== null) {
+              return inventoryQuantity > 0
+            }
+
+            return !hasNumericInventory
+          })
     const seoLastOptimizedAt =
       typeof metadata.seo_last_optimized_at === "string"
         ? metadata.seo_last_optimized_at
         : ""
+    const seoSource =
+      typeof metadata.seo_source === "string" ? metadata.seo_source : ""
+    const isOptimized = Boolean(seoLastOptimizedAt && seoSource)
 
     return {
       id: product.id,
@@ -114,7 +128,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
           ? normalizeText(metadata.meta_description)
           : "",
       seo_last_optimized_at: seoLastOptimizedAt,
-      is_optimized: Boolean(seoLastOptimizedAt),
+      seo_source: seoSource,
+      is_optimized: isOptimized,
       in_stock: inStock,
     }
   })
