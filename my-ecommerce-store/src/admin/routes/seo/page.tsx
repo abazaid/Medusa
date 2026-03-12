@@ -173,6 +173,8 @@ const SeoPage = () => {
       setSettings(payload.settings)
       setAiSettings(payload.ai_settings)
       setAiProviderModels(payload.ai_provider_models)
+      setAiSettings(payload.ai_settings)
+      setAiProviderModels(payload.ai_provider_models)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load SEO data.")
     } finally {
@@ -473,6 +475,23 @@ const SeoPage = () => {
     } finally {
       setActionKey("")
     }
+  }
+
+  const updatePreviewAfter = (
+    key: "meta_title" | "meta_description" | "description",
+    value: string
+  ) => {
+    setPreview((current) =>
+      current
+        ? {
+            ...current,
+            after: {
+              ...current.after,
+              [key]: value,
+            },
+          }
+        : current
+    )
   }
 
   const generateVisibleAll = async () => {
@@ -1009,11 +1028,11 @@ const SeoPage = () => {
                         gap: 6,
                       }}
                       disabled={!!actionKey}
-                      onClick={() => void generateAndSave(product.id, "all")}
+                      onClick={() => void requestPreview(product.id, "all")}
                       title="توليد كل الحقول لهذا المنتج"
                     >
                       <Sparkles />
-                      {actionKey === `${product.id}:all:generate`
+                      {actionKey === `${product.id}:all:preview`
                         ? "جارٍ توليد الكل..."
                         : "توليد الكل"}
                     </button>
@@ -1068,10 +1087,10 @@ const SeoPage = () => {
                           type="button"
                           style={buttonStyle}
                           disabled={!!actionKey}
-                          onClick={() => void generateAndSave(product.id, field.key)}
+                          onClick={() => void requestPreview(product.id, field.key)}
                           title="توليد وحفظ"
                         >
-                          {actionKey === `${product.id}:${field.key}:generate`
+                          {actionKey === `${product.id}:${field.key}:preview`
                             ? "جارٍ التوليد..."
                             : "توليد"}
                         </button>
@@ -1183,11 +1202,41 @@ const SeoPage = () => {
                       <strong style={{ display: "block", marginBottom: 8 }}>
                         بعد: {field.label}
                       </strong>
-                      <div style={{ fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                        {field.key === "description"
-                          ? stripHtml(preview.after[field.key]) || "لا يوجد"
-                          : preview.after[field.key] || "لا يوجد"}
-                      </div>
+                      {field.key === "description" ? (
+                        <textarea
+                          style={{
+                            ...fieldStyle,
+                            minHeight: 220,
+                            resize: "vertical" as const,
+                            background: "#fff",
+                          }}
+                          value={preview.after.description}
+                          onChange={(event) =>
+                            updatePreviewAfter("description", event.target.value)
+                          }
+                        />
+                      ) : field.key === "meta_description" ? (
+                        <textarea
+                          style={{
+                            ...fieldStyle,
+                            minHeight: 110,
+                            resize: "vertical" as const,
+                            background: "#fff",
+                          }}
+                          value={preview.after.meta_description}
+                          onChange={(event) =>
+                            updatePreviewAfter("meta_description", event.target.value)
+                          }
+                        />
+                      ) : (
+                        <input
+                          style={{ ...fieldStyle, background: "#fff" }}
+                          value={preview.after.meta_title}
+                          onChange={(event) =>
+                            updatePreviewAfter("meta_title", event.target.value)
+                          }
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1232,5 +1281,7 @@ export const config = defineRouteConfig({
 })
 
 export default SeoPage
+
+
 
 
