@@ -149,7 +149,6 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const canonicalSlug = getProductSlug(product, params.countryCode)
   const canonical = `${getBaseURL()}/${params.countryCode}/products/${encodeURIComponent(canonicalSlug)}`
   const arSlug = getProductSlug(product, "ar")
-  const enSlug = getProductSlug(product, "en")
 
   return {
     title: metaTitle,
@@ -158,7 +157,6 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       canonical,
       languages: {
         ar: `${getBaseURL()}/ar/products/${encodeURIComponent(arSlug)}`,
-        en: `${getBaseURL()}/en/products/${encodeURIComponent(enSlug)}`,
         "x-default": `${getBaseURL()}/ar/products/${encodeURIComponent(arSlug)}`,
       },
     },

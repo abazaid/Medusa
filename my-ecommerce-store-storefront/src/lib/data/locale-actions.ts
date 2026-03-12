@@ -25,7 +25,7 @@ export const getLocale = async (): Promise<string> => {
  */
 export const setLocaleCookie = async (locale: string) => {
   const cookies = await nextCookies()
-  cookies.set(LOCALE_COOKIE_NAME, locale, {
+  cookies.set(LOCALE_COOKIE_NAME, DEFAULT_LOCALE, {
     maxAge: 60 * 60 * 24 * 365, // 1 year
     httpOnly: false, // Allow client-side access
     sameSite: "strict",
@@ -38,7 +38,8 @@ export const setLocaleCookie = async (locale: string) => {
  * Also updates the cart with the new locale if one exists.
  */
 export const updateLocale = async (localeCode: string): Promise<string> => {
-  await setLocaleCookie(localeCode)
+  const nextLocale = DEFAULT_LOCALE
+  await setLocaleCookie(nextLocale)
 
   // Update cart with the new locale if a cart exists
   const cartId = await getCartId()
@@ -47,7 +48,7 @@ export const updateLocale = async (localeCode: string): Promise<string> => {
       ...(await getAuthHeaders()),
     }
 
-    await sdk.store.cart.update(cartId, { locale: localeCode }, {}, headers)
+    await sdk.store.cart.update(cartId, { locale: nextLocale }, {}, headers)
 
     const cartCacheTag = await getCacheTag("carts")
     if (cartCacheTag) {
@@ -71,5 +72,5 @@ export const updateLocale = async (localeCode: string): Promise<string> => {
     revalidateTag(collectionsCacheTag)
   }
 
-  return localeCode
+  return nextLocale
 }

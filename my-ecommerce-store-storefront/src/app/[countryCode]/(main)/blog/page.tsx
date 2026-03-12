@@ -28,7 +28,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       canonical,
       languages: {
         ar: `${getBaseURL()}/ar/blog`,
-        en: `${getBaseURL()}/en/blog`,
         "x-default": `${getBaseURL()}/ar/blog`,
       },
     },

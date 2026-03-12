@@ -21,18 +21,18 @@ type PageProps = {
 }
 
 export async function generateStaticParams() {
-  return ["ar", "en"].flatMap((countryCode) =>
+  return ["ar"].flatMap((countryCode) =>
     seoLandings.map((landing) => ({
       countryCode,
-      handle: getSeoLandingSlug(landing, countryCode === "ar" ? "ar" : "en"),
+      handle: getSeoLandingSlug(landing, "ar"),
     }))
   )
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params
-  const locale: "ar" | "en" = params.countryCode.toLowerCase() === "ar" ? "ar" : "en"
-  const isArabic = locale === "ar"
+  const locale: "ar" = "ar"
+  const isArabic = true
   const landing = getSeoLandingBySlug(params.handle, locale)
 
   if (!landing) {
@@ -40,7 +40,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   }
 
   const arSlug = getSeoLandingSlug(landing, "ar")
-  const enSlug = getSeoLandingSlug(landing, "en")
   const canonicalSlug = getSeoLandingSlug(landing, locale)
   const canonical = `${getBaseURL()}/${params.countryCode}/landing/${encodeURIComponent(canonicalSlug)}`
 
@@ -51,7 +50,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       canonical,
       languages: {
         ar: `${getBaseURL()}/ar/landing/${encodeURIComponent(arSlug)}`,
-        en: `${getBaseURL()}/en/landing/${encodeURIComponent(enSlug)}`,
         "x-default": `${getBaseURL()}/ar/landing/${encodeURIComponent(arSlug)}`,
       },
     },
@@ -60,8 +58,8 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function LandingDetailPage(props: PageProps) {
   const params = await props.params
-  const locale: "ar" | "en" = params.countryCode.toLowerCase() === "ar" ? "ar" : "en"
-  const isArabic = locale === "ar"
+  const locale: "ar" = "ar"
+  const isArabic = true
   const landing = getSeoLandingBySlug(params.handle, locale)
 
   if (!landing) {

@@ -10,7 +10,6 @@ export type Locale = {
 
 const DEFAULT_LOCALES: Locale[] = [
   { code: "ar", name: "Arabic" },
-  { code: "en", name: "English" },
 ]
 
 const normalizeLocales = (locales: Locale[] | null | undefined): Locale[] => {
@@ -19,14 +18,14 @@ const normalizeLocales = (locales: Locale[] | null | undefined): Locale[] => {
   for (const locale of locales || []) {
     const code = locale.code.toLowerCase()
 
-    if (code !== "ar" && code !== "en") {
+    if (code !== "ar") {
       continue
     }
 
     if (!localeMap.has(code)) {
       localeMap.set(code, {
         code,
-        name: code === "ar" ? "Arabic" : "English",
+        name: "Arabic",
       })
     }
   }
@@ -37,7 +36,7 @@ const normalizeLocales = (locales: Locale[] | null | undefined): Locale[] => {
     }
   }
 
-  return ["ar", "en"]
+  return ["ar"]
     .map((code) => localeMap.get(code))
     .filter((locale): locale is Locale => Boolean(locale))
 }

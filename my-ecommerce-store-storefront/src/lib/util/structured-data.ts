@@ -101,7 +101,7 @@ export function generateOrganizationJsonLd() {
         "@type": "ContactPoint",
         contactType: "customer support",
         areaServed: "SA",
-        availableLanguage: ["ar", "en"],
+        availableLanguage: ["ar"],
       },
     ],
   }

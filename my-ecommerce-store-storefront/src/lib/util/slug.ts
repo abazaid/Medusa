@@ -68,32 +68,33 @@ const pickLocalizedTitle = (title: string, localeSegment: string) => {
 
 export const getProductSlug = (
   product: Pick<HttpTypes.StoreProduct, "title" | "handle" | "metadata">,
-  localeSegment: string
+  _localeSegment: string
 ) => {
   const metadata = (product.metadata as Record<string, unknown> | null) || {}
-  const locale = (localeSegment || "").toLowerCase()
 
   const preferred = getMetadataString(
     metadata,
-    locale === "ar"
-      ? ["slug_ar", "product_slug_ar", "handle_ar"]
-      : ["slug_en", "product_slug_en", "handle_en"]
+    ["slug_en", "product_slug_en", "handle_en", "product_slug", "slug"]
   )
 
   if (preferred) {
-    return locale === "ar" ? slugifyArabic(preferred) : slugifyEnglish(preferred)
+    return slugifyEnglish(preferred)
   }
 
-  const localizedTitle = pickLocalizedTitle(product.title || "", locale)
-  const fromTitle =
-    locale === "ar" ? slugifyArabic(localizedTitle) : slugifyEnglish(localizedTitle)
+  const fromHandle = slugifyEnglish(product.handle || "")
+  if (fromHandle) {
+    return fromHandle
+  }
+
+  const localizedTitle = pickLocalizedTitle(product.title || "", "en")
+  const fromTitle = slugifyEnglish(localizedTitle)
 
   if (fromTitle) {
     return fromTitle
   }
 
   const cleanedHandle = stripSkuSuffix(product.handle || "")
-  return locale === "ar" ? slugifyArabic(cleanedHandle) : slugifyEnglish(cleanedHandle)
+  return slugifyEnglish(cleanedHandle)
 }
 
 export const getCategorySlug = (

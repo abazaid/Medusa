@@ -5,7 +5,7 @@ import { listProducts } from "@lib/data/products"
 import { getBaseURL } from "@lib/util/env"
 import { getProductSlug } from "@lib/util/slug"
 
-const LOCALES = ["ar", "en"] as const
+const LOCALES = ["ar"] as const
 const STORE_COUNTRY_CODE = "sa"
 
 const listProductsWithImages = async () => {

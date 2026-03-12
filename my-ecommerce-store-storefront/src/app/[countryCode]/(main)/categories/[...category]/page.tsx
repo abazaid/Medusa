@@ -31,7 +31,7 @@ export async function generateStaticParams() {
     return []
   }
 
-  const countryCodes = ["ar", "en"]
+  const countryCodes = ["ar"]
 
   const categoryHandles = product_categories.map(
     (category: any) => category.handle
@@ -80,7 +80,6 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       canonicalSlug
     )}`
     const arSlug = getCategorySlug(productCategory, "ar")
-    const enSlug = getCategorySlug(productCategory, "en")
 
     return {
       title: metaTitle,
@@ -99,7 +98,6 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
         canonical,
         languages: {
           ar: `${getBaseURL()}/ar/categories/${encodeURIComponent(arSlug)}`,
-          en: `${getBaseURL()}/en/categories/${encodeURIComponent(enSlug)}`,
           "x-default": `${getBaseURL()}/ar/categories/${encodeURIComponent(arSlug)}`,
         },
       },
@@ -135,7 +133,7 @@ export default async function CategoryPage(props: Props) {
   }
 
   const baseUrl = getBaseURL()
-  const locale = params.countryCode.toLowerCase() === "ar" ? "ar" : "en"
+  const locale = "ar"
   const labels =
     locale === "ar"
       ? { home: "الرئيسية", store: "المتجر" }

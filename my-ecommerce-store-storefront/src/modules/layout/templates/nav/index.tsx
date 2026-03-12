@@ -6,7 +6,6 @@ import { getCategorySlug } from "@lib/util/slug"
 import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CartButton from "@modules/layout/components/cart-button"
-import LanguageSwitcher from "@modules/layout/components/language-switcher"
 import NavSearchAutocomplete from "@modules/layout/components/nav-search-autocomplete"
 
 type MenuItem = {
@@ -192,7 +191,6 @@ export default async function Nav() {
             <NavSearchAutocomplete placeholder={labels.searchPlaceholder} />
 
             <div className="flex items-center gap-5 text-white">
-              <LanguageSwitcher currentLocale={currentLocale} />
               <LocalizedClientLink
                 href="/account"
                 className="hidden flex-col text-sm leading-5 small:flex"

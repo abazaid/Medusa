@@ -1,3 +1,5 @@
+import type { HttpTypes } from "@medusajs/types"
+
 export type Brand = {
   handle: string
   nameAr: string
@@ -90,5 +92,19 @@ export const resolveBrand = (value?: string | null) => {
           candidate &&
           (normalized.includes(candidate) || candidate.includes(normalized))
       )
+  )
+}
+
+export const getProductBrand = (
+  product: Pick<HttpTypes.StoreProduct, "metadata">
+) => {
+  const metadata = (product.metadata as Record<string, unknown> | null) || {}
+
+  return (
+    (typeof metadata.brand_handle === "string" &&
+      (getBrandByHandle(metadata.brand_handle) || resolveBrand(metadata.brand_handle))) ||
+    (typeof metadata.brand_name_ar === "string" && resolveBrand(metadata.brand_name_ar)) ||
+    (typeof metadata.brand_name_en === "string" && resolveBrand(metadata.brand_name_en)) ||
+    (typeof metadata.source_brand === "string" && resolveBrand(metadata.source_brand))
   )
 }

@@ -1,7 +1,7 @@
 import { buildLocaleSitemapXml } from "@lib/util/sitemap"
 
 export async function GET() {
-  const xml = await buildLocaleSitemapXml("en")
+  const xml = await buildLocaleSitemapXml("ar")
 
   return new Response(xml, {
     headers: {

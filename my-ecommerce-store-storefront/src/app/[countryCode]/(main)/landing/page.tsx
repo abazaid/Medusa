@@ -28,7 +28,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       canonical,
       languages: {
         ar: `${getBaseURL()}/ar/landing`,
-        en: `${getBaseURL()}/en/landing`,
         "x-default": `${getBaseURL()}/ar/landing`,
       },
     },
@@ -37,8 +36,8 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function LandingArchivePage(props: PageProps) {
   const params = await props.params
-  const locale: "ar" | "en" = params.countryCode.toLowerCase() === "ar" ? "ar" : "en"
-  const isArabic = locale === "ar"
+  const locale: "ar" = "ar"
+  const isArabic = true
   const pageTitle = isArabic ? "صفحات SEO المخصصة" : "SEO Landing Pages"
   const pageUrl = `${getBaseURL()}/${params.countryCode}/landing`
 

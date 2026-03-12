@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 const DEFAULT_LOCALE_SEGMENT = "ar"
-const SUPPORTED_LOCALE_SEGMENTS = new Set(["ar", "en"])
+const SUPPORTED_LOCALE_SEGMENTS = new Set(["ar"])
 
 const isStaticAsset = (pathname: string) =>
   pathname.includes(".") ||
@@ -52,7 +52,20 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Force locale prefix in URL: /ar/* or /en/*
+  if (first === "en") {
+    const restPath = `/${segments.slice(1).join("/")}`
+    const destination = `${request.nextUrl.origin}/ar${restPath === "/" ? "" : restPath}${search || ""}`
+    const response = NextResponse.redirect(destination, 308)
+    response.cookies.set("_medusa_locale", "ar", {
+      maxAge: 60 * 60 * 24 * 365,
+      httpOnly: false,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    })
+    return response
+  }
+
+  // Force locale prefix in URL: /ar/*
   if (!SUPPORTED_LOCALE_SEGMENTS.has(first)) {
     const destination = `${request.nextUrl.origin}/${DEFAULT_LOCALE_SEGMENT}${normalizedPathname}${search || ""}`
     const response = NextResponse.redirect(destination, 307)

@@ -25,7 +25,6 @@ export async function generateMetadata(props: {
       canonical,
       languages: {
         ar: `${getBaseURL()}/ar`,
-        en: `${getBaseURL()}/en`,
         "x-default": `${getBaseURL()}/ar`,
       },
     },
@@ -74,7 +73,7 @@ export default async function Home(props: {
     name: "Vape Hub KSA",
     alternateName: "مركز الفيب السعودي",
     url: `${getBaseURL()}/${countryCode}`,
-    inLanguage: ["ar-SA", "en-SA"],
+    inLanguage: ["ar-SA"],
     potentialAction: {
       "@type": "SearchAction",
       target: `${getBaseURL()}/${countryCode}/store?q={search_term_string}`,

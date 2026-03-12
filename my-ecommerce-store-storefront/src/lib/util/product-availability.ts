@@ -7,13 +7,25 @@ const getVariantInventory = (
   return typeof qty === "number" ? qty : 0
 }
 
+const isVariantPurchasable = (variant: HttpTypes.StoreProductVariant) => {
+  if (!variant.manage_inventory) {
+    return true
+  }
+
+  if (variant.allow_backorder) {
+    return true
+  }
+
+  return getVariantInventory(variant) > 0
+}
+
 export const isProductInStock = (product: HttpTypes.StoreProduct) => {
   const variants = product.variants || []
   if (!variants.length) {
     return false
   }
 
-  return variants.some((variant) => getVariantInventory(variant) > 0)
+  return variants.some((variant) => isVariantPurchasable(variant))
 }
 
 export const splitByAvailability = <T extends HttpTypes.StoreProduct>(

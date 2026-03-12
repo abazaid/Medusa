@@ -32,11 +32,10 @@ export default async function RootLayout(props: {
   children: React.ReactNode
   params: Promise<{ countryCode: string }>
 }) {
-  const locale = await getLocale()
-  const isArabic = locale.toLowerCase() === "ar"
+  await getLocale()
 
   return (
-    <html lang={isArabic ? "ar" : "en"} data-mode="light" dir={isArabic ? "rtl" : "ltr"}>
+    <html lang="ar" data-mode="light" dir="rtl">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
       </head>

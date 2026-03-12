@@ -1,6 +1,6 @@
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
-import { sortByAvailability } from "@lib/util/product-availability"
+import { isProductInStock } from "@lib/util/product-availability"
 import { HttpTypes } from "@medusajs/types"
 import Product from "../product-preview"
 
@@ -9,6 +9,15 @@ type RelatedProductsProps = {
   countryCode: string
   title?: string
   subtitle?: string
+}
+
+const shuffleProducts = <T,>(items: T[]) => {
+  const next = [...items]
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[next[i], next[j]] = [next[j], next[i]]
+  }
+  return next
 }
 
 export default async function RelatedProducts({
@@ -23,19 +32,21 @@ export default async function RelatedProducts({
     return null
   }
 
-  // edit this function to define your related products logic
   const queryParams: HttpTypes.StoreProductListParams = {}
   if (region?.id) {
     queryParams.region_id = region.id
   }
-  if (product.collection_id) {
-    queryParams.collection_id = [product.collection_id]
+
+  const categoryIds = (product.categories || [])
+    .map((category) => category.id)
+    .filter((id): id is string => Boolean(id))
+
+  if (!categoryIds.length) {
+    return null
   }
-  if (product.tags) {
-    queryParams.tag_id = product.tags
-      .map((t) => t.id)
-      .filter(Boolean) as string[]
-  }
+
+  queryParams.category_id = categoryIds
+  queryParams.limit = 24
   queryParams.is_giftcard = false
 
   const products = await listProducts({
@@ -43,9 +54,10 @@ export default async function RelatedProducts({
     countryCode,
   }).then(({ response }) => {
     const filtered = response.products.filter(
-      (responseProduct) => responseProduct.id !== product.id
+      (responseProduct) =>
+        responseProduct.id !== product.id && isProductInStock(responseProduct)
     )
-    return sortByAvailability(filtered)
+    return shuffleProducts(filtered).slice(0, 8)
   })
 
   if (!products.length) {

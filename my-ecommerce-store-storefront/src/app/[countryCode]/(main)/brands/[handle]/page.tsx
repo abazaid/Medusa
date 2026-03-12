@@ -1,11 +1,12 @@
 import { Metadata } from "next"
 import Image from "next/image"
 import { notFound } from "next/navigation"
+import type { HttpTypes } from "@medusajs/types"
 
 import { getLocale } from "@lib/data/locale-actions"
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
-import { brands, getBrandByHandle, resolveBrand } from "@lib/data/brands"
+import { brands, getBrandByHandle, getProductBrand } from "@lib/data/brands"
 import { getBaseURL } from "@lib/util/env"
 import { buildBrandImageAlt } from "@lib/util/image-alt"
 import { sortByAvailability } from "@lib/util/product-availability"
@@ -39,6 +40,13 @@ const getBrandProductsCache = () => {
   return globalThis.__brand_products_cache__
 }
 
+const matchesBrand = (
+  product: Pick<HttpTypes.StoreProduct, "metadata">,
+  brand: { handle: string; nameAr: string; nameEn: string }
+) => {
+  return getProductBrand(product)?.handle === brand.handle
+}
+
 const listProductsByBrand = async ({
   countryCode,
   brand,
@@ -54,43 +62,33 @@ const listProductsByBrand = async ({
     return cached.products
   }
 
-  const normalized = new Set<string>()
-  const terms = [brand.handle, brand.nameEn, brand.nameAr]
-    .map((value) => (value || "").trim())
-    .filter(Boolean)
-    .filter((value) => {
-      const key = value.toLowerCase()
-      if (normalized.has(key)) {
-        return false
-      }
-      normalized.add(key)
-      return true
+  const collected = new Map<string, HttpTypes.StoreProduct>()
+  let page = 1
+  const limit = 100
+
+  while (true) {
+    const { response, nextPage } = await listProducts({
+      countryCode,
+      pageParam: page,
+      queryParams: { limit },
+      disableCache: true,
     })
 
-  const merged = new Map<string, any>()
-
-  const responses = await Promise.all(
-    terms.map((term) =>
-      listProducts({
-        countryCode,
-        queryParams: {
-          q: term,
-          limit: 48,
-        },
-      })
-    )
-  )
-
-  for (const result of responses) {
-    const response = result.response
     for (const product of response.products || []) {
-      if (product.id) {
-        merged.set(product.id, product)
+      if (product.id && matchesBrand(product, brand)) {
+        collected.set(product.id, product)
       }
     }
+
+    if (!nextPage) {
+      break
+    }
+
+    page = nextPage
   }
 
-  const products = Array.from(merged.values())
+  const products = Array.from(collected.values())
+
   cache[cacheKey] = {
     products,
     expiresAt: Date.now() + BRAND_PRODUCTS_CACHE_TTL_MS,
@@ -129,7 +127,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       canonical,
       languages: {
         ar: `${getBaseURL()}/ar/brands/${brand.handle}`,
-        en: `${getBaseURL()}/en/brands/${brand.handle}`,
         "x-default": `${getBaseURL()}/ar/brands/${brand.handle}`,
       },
     },
@@ -165,18 +162,9 @@ export default async function BrandPage(props: PageProps) {
   const description = isArabic
     ? `استكشف منتجات ${brand.nameAr} الأصلية وتصفح أفضل العروض المتوفرة الآن داخل السعودية.`
     : `Explore original ${brand.nameEn} products and browse the latest available offers in Saudi Arabia.`
-  const brandProducts = productsResponse.filter((product) => {
-    const metadata = (product.metadata as Record<string, unknown> | null) || {}
-    const brandHandle =
-      typeof metadata.brand_handle === "string" ? metadata.brand_handle : ""
-    const sourceBrand =
-      typeof metadata.source_brand === "string" ? metadata.source_brand : ""
-
-    return (
-      brandHandle === brand.handle ||
-      resolveBrand(sourceBrand)?.handle === brand.handle
-    )
-  })
+  const brandProducts = productsResponse.filter((product) =>
+    matchesBrand(product, brand)
+  )
   const sortedBrandProducts = sortByAvailability(brandProducts)
 
   const structuredData = {

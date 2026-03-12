@@ -1,6 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 import { Heading } from "@medusajs/ui"
-import { getBrandByHandle, resolveBrand } from "@lib/data/brands"
+import { getProductBrand } from "@lib/data/brands"
 import { getCategorySlug } from "@lib/util/slug"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
@@ -22,14 +22,8 @@ const ProductInfo = ({
   showDescription = true,
 }: ProductInfoProps) => {
   const descriptionHtml = sanitizeDescription(product.description)
-  const metadata = (product.metadata as Record<string, unknown> | null) || {}
   const isArabic = countryCode.toLowerCase() === "ar"
-  const productBrand =
-    (typeof metadata.brand_handle === "string" &&
-      getBrandByHandle(metadata.brand_handle)) ||
-    (typeof metadata.brand_name_ar === "string" && resolveBrand(metadata.brand_name_ar)) ||
-    (typeof metadata.brand_name_en === "string" && resolveBrand(metadata.brand_name_en)) ||
-    (typeof metadata.source_brand === "string" && resolveBrand(metadata.source_brand))
+  const productBrand = getProductBrand(product)
 
   return (
     <div id="product-info">

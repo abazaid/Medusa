@@ -26,7 +26,7 @@ export async function generateStaticParams() {
     return []
   }
 
-  const countryCodes = ["ar", "en"]
+  const countryCodes = ["ar"]
 
   const collectionHandles = collections.map(
     (collection: StoreCollection) => collection.handle
@@ -67,7 +67,6 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       canonical,
       languages: {
         ar: `${getBaseURL()}/ar/collections/${collection.handle}`,
-        en: `${getBaseURL()}/en/collections/${collection.handle}`,
         "x-default": `${getBaseURL()}/ar/collections/${collection.handle}`,
       },
     },

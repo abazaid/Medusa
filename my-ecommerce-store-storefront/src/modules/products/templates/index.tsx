@@ -1,4 +1,4 @@
-import React, { Suspense } from "react"
+﻿import React, { Suspense } from "react"
 import { notFound } from "next/navigation"
 
 import { HttpTypes } from "@medusajs/types"
@@ -29,16 +29,6 @@ type ProductTemplateProps = {
   images: HttpTypes.StoreProductImage[]
 }
 
-type FeatureSection = {
-  title: string
-  body: string
-  image?: string
-}
-
-type SpecRow = {
-  label: string
-  value: string
-}
 
 const HighlightIcon = ({ icon }: { icon: ProductHighlight["icon"] }) => {
   const cls = "h-6 w-6 text-sky-600"
@@ -150,6 +140,27 @@ const sanitizeDescription = (value?: string | null) =>
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/ on\w+="[^"]*"/gi, "")
     .replace(/ on\w+='[^']*'/gi, "")
+    // Remove legacy injected SEO blocks from product descriptions.
+    .replace(
+      /<h[1-6][^>]*>\s*(تفاصيل المميزات|Feature Sections)\s*<\/h[1-6]>[\s\S]*?(?=<h[1-6][^>]*>|$)/gi,
+      ""
+    )
+    .replace(
+      /<h[1-6][^>]*>\s*(المواصفات|Specifications)\s*<\/h[1-6]>[\s\S]*?(?=<h[1-6][^>]*>|$)/gi,
+      ""
+    )
+    .replace(
+      /<h[1-6][^>]*>\s*(محتويات العلبة|What's in the Box)\s*<\/h[1-6]>[\s\S]*?(?=<h[1-6][^>]*>|$)/gi,
+      ""
+    )
+    .replace(
+      /<h[1-6][^>]*>\s*(دليل قوة النيكوتين|Nicotine Strength Guide)\s*<\/h[1-6]>[\s\S]*?(?=<h[1-6][^>]*>|$)/gi,
+      ""
+    )
+    .replace(
+      /<table[\s\S]*?(عدد\s*السجائر|النيكوتين\s*المناسب|Cigarettes\s*per\s*day|Recommended\s*nicotine)[\s\S]*?<\/table>/gi,
+      ""
+    )
 
 const isSaltNicotineProduct = (product: HttpTypes.StoreProduct) => {
   const metadata = (product.metadata as Record<string, unknown> | null) || {}
@@ -188,10 +199,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           store: "المتجر",
           highlights: "مميزات المنتج",
           description: "وصف المنتج",
-          features: "تفاصيل المميزات",
-          specs: "المواصفات",
-          inBox: "محتويات العلبة",
-          nicotineGuide: "دليل قوة النيكوتين",
           reviews: "تقييمات العملاء",
           delivery: "معلومات التوصيل والإرجاع",
           replacement: "منتجات بديلة ومرتبطة",
@@ -206,10 +213,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           store: "Store",
           highlights: "Product Highlights",
           description: "Product Description",
-          features: "Feature Sections",
-          specs: "Specifications",
-          inBox: "What's in the Box",
-          nicotineGuide: "Nicotine Strength Guide",
           reviews: "Customer Reviews",
           delivery: "Delivery Information",
           replacement: "Replacement Items",
@@ -245,7 +248,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   const deliveryCards =
     locale === "ar"
       ? [
-          "اطلب قبل 6 مساءً للشحن السريع",
+          "اطلب قبل 6 مساء للشحن السريع",
           "توصيل سريع داخل السعودية",
         ]
       : [
@@ -253,72 +256,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           "Fast delivery across Saudi Arabia",
         ]
 
-  const featureSections = parseArray<FeatureSection>(metadata.feature_sections).slice(0, 4)
-  const fallbackFeatures: FeatureSection[] = [
-    {
-      title: isArabic ? "تصميم مريح في اليد" : "Ergonomics",
-      body: isArabic
-        ? "تصميم انسيابي وخفيف يمنح ثباتًا أفضل أثناء الاستخدام اليومي."
-        : "An ergonomic and compact shape designed for comfortable daily use.",
-      image: images?.[1]?.url || images?.[0]?.url,
-    },
-    {
-      title: isArabic ? "عمر بطارية طويل" : "Vast Endurance",
-      body: isArabic
-        ? "بطارية قوية تدعم الاستخدام المستمر لفترات طويلة بشحنة واحدة."
-        : "Long-lasting battery performance built for all-day vaping.",
-      image: images?.[2]?.url || images?.[0]?.url,
-    },
-    {
-      title: isArabic ? "خفيف وسهل الحمل" : "Portable & Lightweight",
-      body: isArabic
-        ? "جهاز صغير وعملي مناسب للجيب والتنقل اليومي."
-        : "Portable, lightweight body ideal for commuting and everyday carry.",
-      image: images?.[3]?.url || images?.[0]?.url,
-    },
-  ]
-
-  const specRows = parseArray<SpecRow>(metadata.specifications).filter(
-    (row) => row?.label && row?.value
-  )
-  const fallbackSpecs: SpecRow[] = [
-    {
-      label: isArabic ? "الأبعاد" : "Dimensions",
-      value:
-        product.length && product.width && product.height
-          ? `${product.length} x ${product.width} x ${product.height} mm`
-          : "-",
-    },
-    {
-      label: isArabic ? "الخامة" : "Material",
-      value: product.material || "-",
-    },
-    {
-      label: isArabic ? "الوزن" : "Weight",
-      value: product.weight ? `${product.weight} g` : "-",
-    },
-    {
-      label: isArabic ? "بلد المنشأ" : "Country of origin",
-      value: product.origin_country || "-",
-    },
-  ]
-
-  const boxItems = parseArray<string>(metadata.box_items)
-  const fallbackBoxItems = [
-    isArabic ? "جهاز الفيب" : "Vape device",
-    isArabic ? "بود 0.7Ω" : "0.7Ω pod",
-    isArabic ? "كابل شحن USB-C" : "USB-C charging cable",
-    isArabic ? "دليل المستخدم" : "User manual",
-  ]
-
-  const nicotineRows = parseArray<{ cigarettes: string; strength: string }>(
-    metadata.nicotine_guide
-  )
-  const fallbackNicotineRows = [
-    { cigarettes: "1-5", strength: "5mg" },
-    { cigarettes: "6-14", strength: "10mg" },
-    { cigarettes: "15+", strength: "20mg" },
-  ]
 
   const deliveryItems = parseArray<string>(metadata.delivery_information)
   const fallbackDeliveryItems = isArabic
@@ -536,74 +473,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
                   </p>
                 )}
 
-                <div className="mt-6">
-                  <h2 className="text-xl font-bold text-secondary-900">{labels.features}</h2>
-                  <div className="mt-4 space-y-6">
-                    {(featureSections.length ? featureSections : fallbackFeatures).map(
-                      (feature, index) => (
-                        <div
-                          key={`${feature.title}-${index}`}
-                          className="grid gap-4 border-b border-slate-200 pb-6 last:border-b-0 last:pb-0 md:grid-cols-[1fr_320px]"
-                        >
-                          <div>
-                            <h3 className="text-lg font-bold text-secondary-900">{feature.title}</h3>
-                            <p className="mt-2 text-sm leading-7 text-slate-700">{feature.body}</p>
-                          </div>
-                          {feature.image ? (
-                            <img
-                              src={feature.image}
-                              alt={`${feature.title} ${product.title}`}
-                              loading="lazy"
-                              decoding="async"
-                              className="h-44 w-full rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="h-44 w-full rounded-lg bg-slate-100" />
-                          )}
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-white p-5">
-                    <h2 className="text-xl font-bold text-secondary-900">{labels.specs}</h2>
-                    <div className="mt-4 divide-y divide-slate-200">
-                      {(specRows.length ? specRows : fallbackSpecs).map((row, index) => (
-                        <div key={`${row.label}-${index}`} className="grid grid-cols-2 py-3 text-sm">
-                          <span className="font-semibold text-slate-700">{row.label}</span>
-                          <span className="text-slate-600">{row.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-200 bg-white p-5">
-                    <h2 className="text-xl font-bold text-secondary-900">{labels.inBox}</h2>
-                    <ul className="mt-4 list-disc space-y-2 pr-5 text-sm text-slate-700">
-                      {(boxItems.length ? boxItems : fallbackBoxItems).map((item, index) => (
-                        <li key={`${item}-${index}`}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
-                  <h2 className="text-xl font-bold text-secondary-900">{labels.nicotineGuide}</h2>
-                  <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
-                    <div className="grid grid-cols-2 bg-slate-100 px-4 py-3 text-sm font-semibold">
-                      <span>{isArabic ? "عدد السجائر يوميًا" : "Cigarettes per day"}</span>
-                      <span>{isArabic ? "النيكوتين المناسب" : "Recommended nicotine"}</span>
-                    </div>
-                    {(nicotineRows.length ? nicotineRows : fallbackNicotineRows).map((row, index) => (
-                      <div key={`${row.cigarettes}-${index}`} className="grid grid-cols-2 px-4 py-3 text-sm border-t border-slate-200">
-                        <span>{row.cigarettes}</span>
-                        <span>{row.strength}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {showReplacementTab ? (

@@ -89,7 +89,6 @@ export const renderSitemapIndexXml = () => {
     `<?xml version="1.0" encoding="UTF-8"?>` +
     `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
     `<sitemap><loc>${xmlEscape(`${baseUrl}/sitemap-ar.xml`)}</loc><lastmod>${xmlEscape(now)}</lastmod></sitemap>` +
-    `<sitemap><loc>${xmlEscape(`${baseUrl}/sitemap-en.xml`)}</loc><lastmod>${xmlEscape(now)}</lastmod></sitemap>` +
     `<sitemap><loc>${xmlEscape(`${baseUrl}/image-sitemap.xml`)}</loc><lastmod>${xmlEscape(now)}</lastmod></sitemap>` +
     `</sitemapindex>`
   )

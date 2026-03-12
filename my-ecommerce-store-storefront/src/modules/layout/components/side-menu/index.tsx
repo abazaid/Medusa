@@ -9,7 +9,6 @@ import { HttpTypes } from "@medusajs/types"
 import { Locale } from "@lib/data/locales"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CountrySelect from "../country-select"
-import LanguageSelect from "../language-select"
 
 type SideMenuProps = {
   regions: HttpTypes.StoreRegion[] | null
@@ -38,7 +37,6 @@ const sideMenuItems = {
 
 const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
   const countryToggleState = useToggleState()
-  const languageToggleState = useToggleState()
   const isArabic = (currentLocale ?? "ar").toLowerCase() === "ar"
   const labels = isArabic ? sideMenuItems.ar : sideMenuItems.en
 
@@ -108,26 +106,6 @@ const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
                     </ul>
 
                     <div className="flex flex-col gap-y-6">
-                      {!!locales?.length && (
-                        <div
-                          className="flex justify-between"
-                          onMouseEnter={languageToggleState.open}
-                          onMouseLeave={languageToggleState.close}
-                        >
-                          <LanguageSelect
-                            toggleState={languageToggleState}
-                            locales={locales}
-                            currentLocale={currentLocale}
-                          />
-                          <ArrowRightMini
-                            className={clx(
-                              "transition-transform duration-150",
-                              languageToggleState.state ? "-rotate-90" : ""
-                            )}
-                          />
-                        </div>
-                      )}
-
                       {(regions?.length || 0) > 1 && (
                         <div
                           className="flex justify-between"
