@@ -68,7 +68,7 @@ const ImportAndUpdatePage = () => {
 
   const uploadProductsFile = async () => {
     if (!importFile) {
-      setError("اختر ملف Excel أولًا.")
+      setError("اختر ملف Excel أولاً.")
       return
     }
 

@@ -1,7 +1,7 @@
 import fs from "fs"
 import os from "os"
 import path from "path"
-import { execFileSync } from "child_process"
+import { spawnSync } from "child_process"
 
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
 import {
@@ -122,6 +122,57 @@ const BRAND_RECORDS: BrandRecord[] = [
 ]
 
 const escapePowerShellString = (value: string) => value.replace(/'/g, "''")
+
+const extractWorkbookArchive = (filePath: string, extractDir: string) => {
+  const pythonScript = [
+    "import sys, zipfile",
+    "zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])",
+  ].join("; ")
+
+  for (const command of ["python3", "python"]) {
+    const result = spawnSync(command, ["-c", pythonScript, filePath, extractDir], {
+      stdio: "pipe",
+      encoding: "utf8",
+    })
+
+    if (result.status === 0) {
+      return
+    }
+
+    if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT") {
+      continue
+    }
+  }
+
+  const powerShellResult = spawnSync(
+    "powershell",
+    [
+      "-NoProfile",
+      "-Command",
+      [
+        "Add-Type -AssemblyName System.IO.Compression.FileSystem",
+        `[System.IO.Compression.ZipFile]::ExtractToDirectory('${escapePowerShellString(
+          filePath
+        )}', '${escapePowerShellString(extractDir)}')`,
+      ].join("; "),
+    ],
+    {
+      stdio: "pipe",
+      encoding: "utf8",
+    }
+  )
+
+  if (powerShellResult.status === 0) {
+    return
+  }
+
+  const stderr =
+    powerShellResult.stderr?.trim() ||
+    powerShellResult.error?.message ||
+    "No supported archive extractor was found. Install python3/python or PowerShell."
+
+  throw new Error(stderr)
+}
 
 const decodeXmlEntities = (value: string) =>
   value
@@ -316,20 +367,7 @@ const readWorkbookRows = (filePath: string) => {
   const extractDir = path.join(tempDir, "xlsx")
 
   try {
-    execFileSync(
-      "powershell",
-      [
-        "-NoProfile",
-        "-Command",
-        [
-          "Add-Type -AssemblyName System.IO.Compression.FileSystem",
-          `[System.IO.Compression.ZipFile]::ExtractToDirectory('${escapePowerShellString(
-            filePath
-          )}', '${escapePowerShellString(extractDir)}')`,
-        ].join("; "),
-      ],
-      { stdio: "pipe" }
-    )
+    extractWorkbookArchive(filePath, extractDir)
 
     const sharedStringsXml = fs.readFileSync(
       path.join(extractDir, "xl", "sharedStrings.xml"),
