@@ -39,6 +39,9 @@ export type QtyImportSummary = {
   results: QtyImportRowResult[]
 }
 
+const QUERY_BATCH_SIZE = 500
+const WORKFLOW_BATCH_SIZE = 250
+
 const escapePowerShellString = (value: string) => value.replace(/'/g, "''")
 
 const extractWorkbookArchive = (filePath: string, extractDir: string) => {
@@ -113,6 +116,16 @@ const normalizeText = (value?: string | null) =>
 
 const normalizeKey = (value?: string | null) =>
   normalizeText(value).toLowerCase()
+
+const chunkArray = <T>(items: T[], size: number) => {
+  const chunks: T[][] = []
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size))
+  }
+
+  return chunks
+}
 
 const parseInteger = (value?: string | null) => {
   const normalized = normalizeText(value)
@@ -298,12 +311,16 @@ export const importQtyWorkbook = async ({
   }
 
   const requestedSkus = Array.from(new Set(qtyRows.map((row) => row.sku).filter(Boolean)))
-  const inventoryItems = requestedSkus.length
-    ? ((await inventoryModuleService.listInventoryItems(
-        { sku: requestedSkus },
-        { take: Math.max(1000, requestedSkus.length) } as any
-      )) as Array<{ id: string; sku?: string | null; deleted_at?: string | null }>)
-    : []
+  const inventoryItems: Array<{ id: string; sku?: string | null; deleted_at?: string | null }> = []
+
+  for (const skuBatch of chunkArray(requestedSkus, QUERY_BATCH_SIZE)) {
+    const batchItems = (await inventoryModuleService.listInventoryItems(
+      { sku: skuBatch },
+      { take: Math.max(QUERY_BATCH_SIZE, skuBatch.length) } as any
+    )) as Array<{ id: string; sku?: string | null; deleted_at?: string | null }>
+
+    inventoryItems.push(...batchItems)
+  }
 
   const activeItems = inventoryItems.filter((item) => !item.deleted_at)
   const itemsBySku = new Map<string, Array<{ id: string; sku: string }>>()
@@ -320,20 +337,29 @@ export const importQtyWorkbook = async ({
   }
 
   const inventoryItemIds = activeItems.map((item) => item.id)
-  const currentLevels = inventoryItemIds.length
-    ? ((await inventoryModuleService.listInventoryLevels(
-        {
-          inventory_item_id: inventoryItemIds,
-          location_id: defaultLocation.id,
-        },
-        { take: Math.max(1000, inventoryItemIds.length) } as any
-      )) as Array<{
-        id: string
-        inventory_item_id: string
-        location_id: string
-        stocked_quantity: number
-      }>)
-    : []
+  const currentLevels: Array<{
+    id: string
+    inventory_item_id: string
+    location_id: string
+    stocked_quantity: number
+  }> = []
+
+  for (const idBatch of chunkArray(inventoryItemIds, QUERY_BATCH_SIZE)) {
+    const batchLevels = (await inventoryModuleService.listInventoryLevels(
+      {
+        inventory_item_id: idBatch,
+        location_id: defaultLocation.id,
+      },
+      { take: Math.max(QUERY_BATCH_SIZE, idBatch.length) } as any
+    )) as Array<{
+      id: string
+      inventory_item_id: string
+      location_id: string
+      stocked_quantity: number
+    }>
+
+    currentLevels.push(...batchLevels)
+  }
 
   const levelsByInventoryItemId = new Map(
     currentLevels.map((level) => [level.inventory_item_id, level])
@@ -434,19 +460,23 @@ export const importQtyWorkbook = async ({
   }
 
   if (updates.length) {
-    await updateInventoryLevelsWorkflow(container as any).run({
-      input: {
-        updates,
-      },
-    })
+    for (const batch of chunkArray(updates, WORKFLOW_BATCH_SIZE)) {
+      await updateInventoryLevelsWorkflow(container as any).run({
+        input: {
+          updates: batch,
+        },
+      })
+    }
   }
 
   if (creates.length) {
-    await createInventoryLevelsWorkflow(container as any).run({
-      input: {
-        inventory_levels: creates,
-      },
-    })
+    for (const batch of chunkArray(creates, WORKFLOW_BATCH_SIZE)) {
+      await createInventoryLevelsWorkflow(container as any).run({
+        input: {
+          inventory_levels: batch,
+        },
+      })
+    }
   }
 
   return {
