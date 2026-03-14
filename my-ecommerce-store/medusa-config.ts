@@ -1,14 +1,6 @@
-import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { loadEnv, defineConfig } from "@medusajs/framework/utils"
 
-loadEnv(process.env.NODE_ENV || 'development', process.cwd())
-
-const modules: { resolve: string }[] = []
-
-if (process.env.ENABLE_BLOG_MODULE === "true") {
-  modules.push({
-    resolve: "./src/modules/blog",
-  })
-}
+loadEnv(process.env.NODE_ENV || "development", process.cwd())
 
 module.exports = defineConfig({
   projectConfig: {
@@ -21,5 +13,9 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
   },
-  modules,
+  modules: [
+    {
+      resolve: "./src/modules/blog",
+    },
+  ],
 })

@@ -2,14 +2,6 @@ const { loadEnv, defineConfig } = require("@medusajs/framework/utils")
 
 loadEnv(process.env.NODE_ENV || "development", process.cwd())
 
-const modules = []
-
-if (process.env.ENABLE_BLOG_MODULE === "true") {
-  modules.push({
-    resolve: "./src/modules/blog",
-  })
-}
-
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -21,5 +13,9 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
   },
-  modules,
+  modules: [
+    {
+      resolve: "./src/modules/blog",
+    },
+  ],
 })

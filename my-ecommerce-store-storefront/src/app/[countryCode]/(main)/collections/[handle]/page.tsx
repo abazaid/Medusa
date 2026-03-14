@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { getCollectionByHandle, listCollections } from "@lib/data/collections"
+import type { ProductFilters } from "@lib/data/products"
 import { getBaseURL } from "@lib/util/env"
 import { StoreCollection } from "@medusajs/types"
 import CollectionTemplate from "@modules/collections/templates"
@@ -12,6 +13,12 @@ type Props = {
   searchParams: Promise<{
     page?: string
     sortBy?: SortOptions
+    brand?: string
+    nicotine?: string
+    resistance?: string
+    flavor?: string
+    stock?: string
+    price?: string
   }>
 }
 
@@ -85,6 +92,19 @@ export default async function CollectionPage(props: Props) {
   const searchParams = await props.searchParams
   const params = await props.params
   const { sortBy, page } = searchParams
+  const parseCsv = (value?: string) =>
+    (value || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  const filters: ProductFilters = {
+    brand: parseCsv(searchParams.brand),
+    nicotine: parseCsv(searchParams.nicotine),
+    resistance: parseCsv(searchParams.resistance),
+    flavor: parseCsv(searchParams.flavor),
+    stock: parseCsv(searchParams.stock),
+    price: parseCsv(searchParams.price),
+  }
 
   const collection = await getCollectionByHandle(params.handle).then(
     (collection: StoreCollection) => collection
@@ -99,6 +119,7 @@ export default async function CollectionPage(props: Props) {
       collection={collection}
       page={page}
       sortBy={sortBy}
+      filters={filters}
       countryCode={params.countryCode}
     />
   )

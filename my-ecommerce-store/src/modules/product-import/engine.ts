@@ -5,6 +5,7 @@ import { execFileSync } from "child_process"
 
 import { ContainerRegistrationKeys, Modules, ProductStatus } from "@medusajs/framework/utils"
 import {
+  createInventoryLevelsWorkflow,
   createProductsWorkflow,
   deleteProductsWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
@@ -859,7 +860,11 @@ export const importProductsFromWorkbook = async ({
       },
     })
 
-    await inventoryModuleService.createInventoryLevels(inventoryLevels)
+    await createInventoryLevelsWorkflow(container as any).run({
+      input: {
+        inventory_levels: inventoryLevels,
+      },
+    })
 
     createdProductsCount += 1
     createdVariantsCount += variants.length

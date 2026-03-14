@@ -22,6 +22,10 @@ type ProductRecord = {
     name?: string | null
     handle?: string | null
   }[] | null
+  collection?: {
+    title?: string | null
+    handle?: string | null
+  } | null
 }
 
 type SeoTarget = SeoFieldTarget | "all"
@@ -139,6 +143,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       "categories.id",
       "categories.name",
       "categories.handle",
+      "collection.id",
+      "collection.title",
+      "collection.handle",
     ],
     filters: {
       id: productId,

@@ -33,8 +33,8 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals, locale = "ar" }) => {
         <div className="flex items-center justify-between">
           <span>
             {isArabic
-              ? "الإجمالي الفرعي (بدون الشحن والضريبة)"
-              : "Subtotal (excl. shipping and taxes)"}
+              ? "الإجمالي الفرعي (شامل الضريبة وبدون الشحن)"
+              : "Subtotal (incl. tax, excl. shipping)"}
           </span>
           <span data-testid="cart-subtotal" data-value={item_subtotal || 0}>
             {convertToLocale({ amount: item_subtotal ?? 0, currency_code })}

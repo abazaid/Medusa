@@ -1,0 +1,5 @@
+{
+  "/[countryCode]/(main)/categories/[...category]/page": "app/[countryCode]/(main)/categories/[...category]/page.js",
+  "/[countryCode]/(main)/page": "app/[countryCode]/(main)/page.js",
+  "/[countryCode]/(main)/products/[handle]/page": "app/[countryCode]/(main)/products/[handle]/page.js"
+}

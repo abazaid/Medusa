@@ -1,6 +1,7 @@
 import { Metadata } from "next"
 
 import { getBaseURL } from "@lib/util/env"
+import type { ProductFilters } from "@lib/data/products"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import StoreTemplate from "@modules/store/templates"
 
@@ -9,6 +10,12 @@ type Params = {
     sortBy?: SortOptions
     page?: string
     q?: string
+    brand?: string
+    nicotine?: string
+    resistance?: string
+    flavor?: string
+    stock?: string
+    price?: string
   }>
   params: Promise<{
     countryCode: string
@@ -55,12 +62,26 @@ export default async function StorePage(props: Params) {
   const params = await props.params
   const searchParams = await props.searchParams
   const { sortBy, page, q } = searchParams
+  const parseCsv = (value?: string) =>
+    (value || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  const filters: ProductFilters = {
+    brand: parseCsv(searchParams.brand),
+    nicotine: parseCsv(searchParams.nicotine),
+    resistance: parseCsv(searchParams.resistance),
+    flavor: parseCsv(searchParams.flavor),
+    stock: parseCsv(searchParams.stock),
+    price: parseCsv(searchParams.price),
+  }
 
   return (
     <StoreTemplate
       sortBy={sortBy}
       page={page}
       searchQuery={q}
+      filters={filters}
       countryCode={params.countryCode}
     />
   )

@@ -57,7 +57,9 @@ export default async function Home(props: {
   } = await listProducts({
     countryCode,
     queryParams: {
-      limit: 12,
+      limit: 24,
+      fields:
+        "id,title,handle,thumbnail,*images,*categories,*variants,*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+metadata,+tags",
     },
   })
   const sortedProducts = sortByAvailability(products || [])

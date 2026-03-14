@@ -1,0 +1,423 @@
+{
+  "node": {
+    "7f0f41cd6b2e5b62717dd0440bd2ad20d94fe464e2": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7f776d0c7eb7d438ab80fd1510ac0d9b54f57884b7": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7ff1d99d8c2db6ad514f7f32933bd7804c35157c1e": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "0040d072fdd2e5f515a98af7a7e75d9bb629f02bec": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "40116f0f434739e361c9656ad0d3651a7671e3c0ff": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "4020a9f143d9bc7eb1bdb3a809700041984935bde1": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "403d07542fd13f306116857162305a2ae088b3c268": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "403db3fc8534f9f7a8c05ce9c7ebef1f14eb874e14": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "40669a2001c985b2442fb0c3cdc0bfe3f821557030": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "40718c5575645037411579ef53014ba4002e21f64b": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "action-browser"
+      }
+    },
+    "4078c737898e4fe1526fd03959c73b5fb729bda9e2": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "409e2e18e86a7df5fc9b7ccb224379cdc8564ca1cf": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "40a18a0ced5a8867723976c3e67d740809707b1d8d": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "40b727c384bc2694c7305366ff60f0d838335e9e4b": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "607ff970d274852ceb9d8651b626d21113178633f1": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "60b776c9714c6c41457bad388830e9e7dbceb56ffd": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "60d4c493ead8f68f02f039a8d6719ee72ec1dc48a7": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "60dad432bc09d079bfcf3b0fc5924948c7a12da290": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "60e515d58ad563258182c1bf8d8be723f4f08fc759": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "60e82e2568e05d438518023959b6f0b4eb26291ddd": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "0012605443b6e1d80bd62369a1648b4cfd19ca699e": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "action-browser"
+      }
+    },
+    "40000d9d4e00baa52f7deb2e49bb1460d41911ad39": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "607283002d401cc2d8c684aaf9dc3147217c284617": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "60f9c2ad1532a58adce619aa59c8aeb7a90a68ad47": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7f73d330dbc279c34aebbca4aa9031624b9b1fc9f6": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7f754c777491da13fc0fab71655e8f9b4a954899fd": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7f7b9f1dfd6fe763325bcb5362f11880195d075e02": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fa8e7fb9a0e31b4c7edaae61efe989aae979f1f81": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fd8db007169e1d0bda62e6b2595fd1165bf56b5f2": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7f92457eb675d43eda5e99066d6a12b7c75d9560c7": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fb62c050ce80fc38e4aa2ceaaf5dbb6479c73a9e3": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fcd29fea62bcb629cdd59a6e4678f537a24c416c0": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fc7ac6b92d4ad8db5eca7d1f2afe3c102527f938e": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fd5b690664bdb58f3d53b1677be86bcff02fcac41": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fe22e29fd9b583c70e8668f53fdf4ff2f5786c55a": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7f19968ed1755dd82f9c8a8c83c37667f0ecd018ef": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7fed6abe8cae1aec3c9d315c99568767e98cc7f04e": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    },
+    "7ff077771ce23d974d7e4d3a99da2b5712debc8632": {
+      "workers": {
+        "app/[countryCode]/(main)/categories/[...category]/page": {
+          "moduleId": "[project]/.next-internal/server/app/[countryCode]/(main)/categories/[...category]/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/data/locale-actions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/lib/data/cart.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE2 => \"[project]/src/lib/data/customer.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE3 => \"[project]/src/lib/data/regions.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE4 => \"[project]/src/lib/data/collections.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE5 => \"[project]/src/lib/data/products.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": true
+        }
+      },
+      "layer": {
+        "app/[countryCode]/(main)/categories/[...category]/page": "rsc"
+      }
+    }
+  },
+  "edge": {}
+}

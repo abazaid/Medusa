@@ -1,4 +1,4 @@
-type ProductRecord = {
+﻿type ProductRecord = {
   id: string
   title: string
   handle: string
@@ -11,6 +11,10 @@ type ProductRecord = {
     name?: string | null
     handle?: string | null
   }[] | null
+  collection?: {
+    title?: string | null
+    handle?: string | null
+  } | null
 }
 
 type SerpResult = {
@@ -129,14 +133,25 @@ export const sanitizeSeoAiSettings = (
 
 export const DEFAULT_SEO_PROMPT_SETTINGS: SeoPromptSettings = {
   global_instructions:
-    "اكتب بصياغة عربية احترافية موجهة للسوق السعودي لمتجر فيب. ركز على وضوح نية الشراء، قوة الإقناع، وابتعد عن النسخ الحرفي من المنافسين. استخدم اسم المنتج والماركة عند الحاجة، وتجنب الحشو والمبالغة غير الواقعية.",
+    "Write in professional Arabic for a Saudi vape ecommerce store. Keep copy clear, useful, and conversion-focused. Avoid keyword stuffing and exaggerated claims.",
   meta_title_instructions:
-    "اكتب Meta Title قويًا وقصيرًا وواضحًا وجذابًا، يركز على اسم المنتج والكلمة الشرائية. الطول المثالي أقل من 60 حرفًا ويجب أن يكون مناسبًا لنتائج البحث.",
+    "Write a strong SEO meta title under 60 characters using product name and intent naturally.",
   meta_description_instructions:
-    "اكتب Meta Description احترافيًا بين 140 و160 حرفًا تقريبًا. اجعله مقنعًا، يوضح الفائدة الأساسية، ويحتوي نداءً شرائيًا واضحًا بدون حشو.",
+    "Write a persuasive SEO meta description between 140 and 160 characters with a clear buyer benefit and CTA.",
   product_description_instructions:
-    "اكتب وصف منتج احترافيًا ومنظمًا بصيغة HTML بسيطة تتضمن فقرات وعنوانًا فرعيًا وقائمة نقاط عند الحاجة. اجعله مناسبًا لمتجر فيب في السعودية، واضحًا، مقنعًا، ويبرز المزايا والاستخدام والفئة المناسبة للمنتج.",
+    "Write a professional Arabic HTML product description for Saudi market using clear structure, practical benefits, and natural brand/product naming.",
 }
+
+const DESCRIPTION_STRUCTURE_POLICY = [
+  "The product description MUST be in Arabic (MSA) and between 1200 and 1600 words.",
+  "Use only simple HTML tags: h2, h3, p, ul, li, strong, a.",
+  "Follow this exact H2 order: Introduction, Product Overview, Key Features, Technical Specifications, Design and Build Quality, Performance and Vapor Production, Our Review, How to Use, Comparison, Why Vapers Choose This Device, Who Should Use This Product, Why Buy From Our Store, Explore Related Products, Frequently Asked Questions.",
+  "Frequently Asked Questions must include 5 to 7 Q&A items.",
+  "Key Features must be bullet points using ul/li.",
+  "Write unique content that is more complete and better structured than competitors. Do not copy.",
+  "Use natural internal links in the body with 3 to 5 clickable anchors.",
+  "Internal links must be only to relevant pages inside this same store domain.",
+].join(" ")
 
 export const normalizeText = (value?: string | null) =>
   (value || "").replace(/\s+/g, " ").trim()
@@ -226,11 +241,87 @@ export const buildSearchQuery = (product: ProductRecord) => {
   const title = normalizeText(product.title)
   const category = normalizeText(product.categories?.[0]?.name)
   const type = normalizeText(product.type?.value)
-  const parts = [title, category, type, "السعودية"]
+  const parts = [title, category, type, "Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©"]
     .filter(Boolean)
     .slice(0, 3)
 
   return parts.join(" ")
+}
+
+const getStorefrontBaseUrl = () => {
+  const explicit =
+    normalizeText(process.env.STOREFRONT_BASE_URL) ||
+    normalizeText(process.env.STORE_FRONTEND_URL) ||
+    normalizeText(process.env.NEXT_PUBLIC_BASE_URL)
+
+  if (explicit) {
+    return explicit.replace(/\/+$/, "")
+  }
+
+  const storeCors = normalizeText(process.env.STORE_CORS)
+  if (storeCors) {
+    const firstOrigin = storeCors
+      .split(",")
+      .map((item) => normalizeText(item))
+      .find(Boolean)
+
+    if (firstOrigin) {
+      return firstOrigin.replace(/\/+$/, "")
+    }
+  }
+
+  return "https://vapehubksa.com"
+}
+
+const getProductBrandHandle = (product: ProductRecord) => {
+  const metadata = (product.metadata || {}) as Record<string, unknown>
+  return typeof metadata.brand_handle === "string"
+    ? normalizeText(metadata.brand_handle)
+    : ""
+}
+
+const buildInternalLinkCandidates = (product: ProductRecord) => {
+  const baseUrl = getStorefrontBaseUrl()
+  const localePrefix = "/ar"
+  const links = new Set<string>()
+
+  links.add(`${baseUrl}${localePrefix}/store`)
+  links.add(`${baseUrl}${localePrefix}/brands`)
+  links.add(`${baseUrl}${localePrefix}/categories`)
+
+  const safeHandle = encodeURIComponent(normalizeText(product.handle))
+  if (safeHandle) {
+    links.add(`${baseUrl}${localePrefix}/products/${safeHandle}`)
+  }
+
+  const safeTitle = normalizeText(product.title)
+  if (safeTitle) {
+    links.add(`${baseUrl}${localePrefix}/store?q=${encodeURIComponent(safeTitle)}`)
+  }
+
+  const brandHandle = getProductBrandHandle(product)
+  if (brandHandle) {
+    links.add(`${baseUrl}${localePrefix}/brands/${encodeURIComponent(brandHandle)}`)
+  }
+
+  const collectionHandle = normalizeText(product.collection?.handle)
+  if (collectionHandle) {
+    links.add(
+      `${baseUrl}${localePrefix}/collections/${encodeURIComponent(collectionHandle)}`
+    )
+  }
+
+  for (const category of product.categories || []) {
+    const categoryHandle = normalizeText(category?.handle)
+    if (!categoryHandle) {
+      continue
+    }
+    links.add(
+      `${baseUrl}${localePrefix}/categories/${encodeURIComponent(categoryHandle)}`
+    )
+  }
+
+  return Array.from(links).slice(0, 8)
 }
 
 const fetchCompetitorPageExcerpt = async (url: string) => {
@@ -374,7 +465,8 @@ const buildResponseRules = (target: SeoFieldTarget) => {
 
 const buildTargetSpecificConstraints = (
   target: SeoFieldTarget,
-  currentFieldValue: string
+  currentFieldValue: string,
+  internalLinkCandidates: string[]
 ) => {
   if (target !== "description") {
     return []
@@ -384,6 +476,8 @@ const buildTargetSpecificConstraints = (
     "For product description generation, analyze the top 5 competitor results and their page excerpts first.",
     "Compare their strengths and weaknesses, then write a stronger description for this store.",
     "Your response is invalid if it is substantially similar to the current description.",
+    DESCRIPTION_STRUCTURE_POLICY,
+    `Internal links available for this product (use 3 to 5 only): ${internalLinkCandidates.join(" | ")}`,
     `Current description to improve from only as reference and not for reuse: ${truncate(
       stripHtml(currentFieldValue),
       700
@@ -401,6 +495,7 @@ const buildGenerationPrompt = (input: {
   const product = input.product
   const metadata = (product.metadata || {}) as Record<string, unknown>
   const currentFieldValue = getCurrentFieldValue(product, input.target)
+  const internalLinkCandidates = buildInternalLinkCandidates(product)
   const categoryNames = (product.categories || [])
     .map((category) => normalizeText(category.name))
     .filter(Boolean)
@@ -411,7 +506,11 @@ const buildGenerationPrompt = (input: {
     input.settings.global_instructions,
     getFieldPrompt(input.target, input.settings),
     ...buildResponseRules(input.target),
-    ...buildTargetSpecificConstraints(input.target, currentFieldValue),
+    ...buildTargetSpecificConstraints(
+      input.target,
+      currentFieldValue,
+      internalLinkCandidates
+    ),
     "Use the top Saudi Google results and page excerpts as competitive context only. Do not copy them verbatim.",
     "",
     `Target field: ${input.target}`,
@@ -419,6 +518,8 @@ const buildGenerationPrompt = (input: {
     `Product handle: ${product.handle}`,
     `Product type: ${normalizeText(product.type?.value) || "Not specified"}`,
     `Product categories: ${categoryNames || "Not specified"}`,
+    `Product collection: ${normalizeText(product.collection?.title) || "Not specified"}`,
+    `Store base URL for internal links: ${getStorefrontBaseUrl()}`,
     `Current field value: ${truncate(
       input.target === "description"
         ? stripHtml(currentFieldValue)
@@ -475,6 +576,38 @@ const parseJsonFromModelResponse = (content: string) => {
     }
     throw new Error(`Model response was not valid JSON: ${trimmed}`)
   }
+}
+
+const isInternalLink = (href: string, baseUrl: string) => {
+  const value = normalizeText(href)
+  if (!value) return false
+
+  if (value.startsWith("/")) {
+    return true
+  }
+
+  try {
+    const linkUrl = new URL(value)
+    const base = new URL(baseUrl)
+    return linkUrl.hostname === base.hostname
+  } catch {
+    return false
+  }
+}
+
+const enforceInternalLinksOnly = (html: string) => {
+  const baseUrl = getStorefrontBaseUrl()
+
+  return (html || "").replace(
+    /<a\b([^>]*?)href=(["'])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi,
+    (_fullMatch, beforeHref, quote, href, afterHref, innerHtml) => {
+      if (isInternalLink(href, baseUrl)) {
+        return `<a${beforeHref}href=${quote}${href}${quote}${afterHref}>${innerHtml}</a>`
+      }
+
+      return innerHtml
+    }
+  )
 }
 
 const getProviderApiKey = (settings: SeoAiSettings) => {
@@ -655,7 +788,7 @@ export const generateSeoFieldWithAI = async (input: {
       ? truncate(normalizedContent, 60)
       : input.target === "meta_description"
       ? truncate(normalizedContent, 160)
-      : normalizedContent
+      : enforceInternalLinksOnly(normalizedContent)
 
   if (
     input.target === "description" &&
@@ -690,3 +823,4 @@ export const generateSeoFieldWithOpenAI = async (input: {
       claude_api_key: "",
     }),
   })
+

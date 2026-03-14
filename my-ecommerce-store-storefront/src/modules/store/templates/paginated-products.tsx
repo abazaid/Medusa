@@ -1,4 +1,5 @@
 import { listProductsWithSort } from "@lib/data/products"
+import type { ProductFilters } from "@lib/data/products"
 import { sortByAvailability } from "@lib/util/product-availability"
 import { getRegion } from "@lib/data/regions"
 import ProductPreview from "@modules/products/components/product-preview"
@@ -23,6 +24,9 @@ export default async function PaginatedProducts({
   collectionId,
   categoryId,
   productsIds,
+  cardVariant,
+  showQuickAdd,
+  filters,
   countryCode,
 }: {
   sortBy?: SortOptions
@@ -31,6 +35,9 @@ export default async function PaginatedProducts({
   collectionId?: string
   categoryId?: string
   productsIds?: string[]
+  cardVariant?: "default" | "category"
+  showQuickAdd?: boolean
+  filters?: ProductFilters
   countryCode: string
 }) {
   const queryParams: PaginatedProductsParams = {
@@ -69,6 +76,7 @@ export default async function PaginatedProducts({
     page,
     queryParams,
     sortBy,
+    filters,
     countryCode,
   })
   products = sortByAvailability(products)
@@ -79,17 +87,22 @@ export default async function PaginatedProducts({
     <>
       {!products.length && searchQuery ? (
         <div className="mb-8 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-sm text-slate-600">
-          لا توجد نتائج مطابقة لعبارة البحث: <strong>{searchQuery}</strong>
+          Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù…Ø·Ø§Ø¨Ù‚Ø© Ù„Ø¹Ø¨Ø§Ø±Ø© Ø§Ù„Ø¨Ø­Ø«: <strong>{searchQuery}</strong>
         </div>
       ) : null}
       <ul
-        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8"
+        className="grid grid-cols-2 w-full small:grid-cols-3 medium:grid-cols-4 gap-x-4 gap-y-5"
         data-testid="products-list"
       >
         {products.map((p) => {
           return (
             <li key={p.id}>
-              <ProductPreview product={p} region={region} />
+              <ProductPreview
+                product={p}
+                region={region}
+                cardVariant={cardVariant}
+                showQuickAdd={showQuickAdd}
+              />
             </li>
           )
         })}

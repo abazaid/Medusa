@@ -5,6 +5,19 @@ import { getBrandByHandle, resolveBrand } from "@lib/data/brands"
 import { getBaseURL } from "./env"
 import { getProductSlug } from "./slug"
 
+const SAUDI_VAT_RATE = 0.15
+
+const getTaxInclusiveAmount = (
+  amount?: number | null,
+  isTaxInclusive?: boolean | null
+) => {
+  if (typeof amount !== "number") {
+    return 0
+  }
+
+  return isTaxInclusive ? amount : amount * (1 + SAUDI_VAT_RATE)
+}
+
 const getProductBrandName = (product: HttpTypes.StoreProduct) => {
   const metadata = (product.metadata as Record<string, unknown> | null) || {}
   const brandFromHandle =
@@ -59,7 +72,10 @@ export function generateProductJsonLd(
       priceCurrency: price?.currency_code || region.currency_code,
       price:
         typeof price?.calculated_amount === "number"
-          ? price.calculated_amount.toFixed(2)
+          ? getTaxInclusiveAmount(
+              price.calculated_amount,
+              price.is_calculated_price_tax_inclusive
+            ).toFixed(2)
           : "0.00",
       availability:
         defaultVariant?.inventory_quantity && defaultVariant.inventory_quantity > 0

@@ -1,0 +1,20 @@
+{
+  "..\\node_modules\\@medusajs\\ui\\dist\\esm\\components\\code-block\\code-block.js -> prismjs/components/prism-json": {
+    "id": 33523,
+    "files": [
+      "static/chunks/3523.2faa15900187fa47.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": 90472,
+    "files": [
+      "static/chunks/472.04a8725c923ee78b.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": 99341,
+    "files": [
+      "static/chunks/9341.d79f7549abcc5c7c.js"
+    ]
+  }
+}

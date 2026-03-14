@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Best Beginner Vapes Saudi 2026</title>
+  <desc id="desc">A custom hero image for a Saudi vape guide blog post.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f2a47"/>
+      <stop offset="100%" stop-color="#163b66"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <g opacity="0.18">
+    <circle cx="1320" cy="140" r="220" fill="#60a5fa"/>
+    <circle cx="260" cy="760" r="280" fill="#22c55e"/>
+  </g>
+  <rect x="120" y="130" width="1360" height="640" rx="28" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.2)"/>
+  <rect x="170" y="190" width="360" height="10" rx="5" fill="url(#accent)"/>
+  <text x="170" y="280" fill="#e2e8f0" font-family="Tahoma, Arial, sans-serif" font-size="58" font-weight="700">
+    أفضل أجهزة الفيب للمبتدئين في السعودية 2026
+  </text>
+  <text x="170" y="360" fill="#cbd5e1" font-family="Tahoma, Arial, sans-serif" font-size="34">
+    دليل عملي لاختيار أول جهاز فيب بشكل صحيح
+  </text>
+  <text x="170" y="430" fill="#cbd5e1" font-family="Tahoma, Arial, sans-serif" font-size="34">
+    مع ترشيحات داخلية من متجر Vape Hub KSA
+  </text>
+  <g transform="translate(170,520)">
+    <rect x="0" y="0" width="260" height="140" rx="18" fill="rgba(15,23,42,0.6)" stroke="#475569"/>
+    <rect x="290" y="0" width="260" height="140" rx="18" fill="rgba(15,23,42,0.6)" stroke="#475569"/>
+    <rect x="580" y="0" width="260" height="140" rx="18" fill="rgba(15,23,42,0.6)" stroke="#475569"/>
+    <text x="26" y="58" fill="#f8fafc" font-family="Tahoma, Arial, sans-serif" font-size="28" font-weight="700">MTL مناسب</text>
+    <text x="316" y="58" fill="#f8fafc" font-family="Tahoma, Arial, sans-serif" font-size="28" font-weight="700">نكهة أوضح</text>
+    <text x="606" y="58" fill="#f8fafc" font-family="Tahoma, Arial, sans-serif" font-size="28" font-weight="700">تكلفة أقل</text>
+  </g>
+  <text x="1200" y="810" fill="#93c5fd" font-family="Tahoma, Arial, sans-serif" font-size="26" font-weight="700">Vape Hub KSA Blog</text>
+</svg>
+

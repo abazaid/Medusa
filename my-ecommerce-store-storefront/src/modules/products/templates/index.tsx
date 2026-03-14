@@ -13,7 +13,6 @@ import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-relat
 import ProductActionsWrapper from "./product-actions-wrapper"
 
 import { getBaseURL } from "@lib/util/env"
-import { buildProductHighlights, ProductHighlight } from "@lib/util/product-highlights"
 import { getCategorySlug, getProductSlug } from "@lib/util/slug"
 import {
   extractFaqFromMetadata,
@@ -27,98 +26,6 @@ type ProductTemplateProps = {
   region: HttpTypes.StoreRegion
   countryCode: string
   images: HttpTypes.StoreProductImage[]
-}
-
-
-const HighlightIcon = ({ icon }: { icon: ProductHighlight["icon"] }) => {
-  const cls = "h-6 w-6 text-sky-600"
-
-  if (icon === "battery") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="3" y="7" width="16" height="10" rx="2" />
-        <path d="M20 10h1a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1" />
-      </svg>
-    )
-  }
-
-  if (icon === "drop") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 3c4 5 6 7.8 6 10a6 6 0 1 1-12 0c0-2.2 2-5 6-10Z" />
-      </svg>
-    )
-  }
-
-  if (icon === "power") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 3v8" />
-        <path d="M7.8 6.5a7 7 0 1 0 8.4 0" />
-      </svg>
-    )
-  }
-
-  if (icon === "pod") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="7" y="3" width="10" height="18" rx="4" />
-        <path d="M10 8h4" />
-      </svg>
-    )
-  }
-
-  if (icon === "coil") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M6 12h12" />
-        <path d="M8 8h8" />
-        <path d="M8 16h8" />
-      </svg>
-    )
-  }
-
-  if (icon === "bottle") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="8" y="3" width="8" height="18" rx="2" />
-        <path d="M10 6h4" />
-      </svg>
-    )
-  }
-
-  if (icon === "nicotine-type") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M6 12h4l2-4 2 8 2-4h2" />
-      </svg>
-    )
-  }
-
-  if (icon === "nicotine") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M5 12h14" />
-        <path d="M7 8h10" />
-        <path d="M7 16h10" />
-      </svg>
-    )
-  }
-
-  if (icon === "vg") {
-    return (
-      <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="5" y="4" width="14" height="16" rx="2" />
-        <path d="M8 9h8M8 14h8" />
-      </svg>
-    )
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 18 12 4l8 14" />
-    </svg>
-  )
 }
 
 const parseArray = <T,>(value: unknown): T[] => {
@@ -197,7 +104,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
       ? {
           home: "الرئيسية",
           store: "المتجر",
-          highlights: "مميزات المنتج",
           description: "وصف المنتج",
           reviews: "تقييمات العملاء",
           delivery: "معلومات التوصيل والإرجاع",
@@ -211,7 +117,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
       : {
           home: "Home",
           store: "Store",
-          highlights: "Product Highlights",
           description: "Product Description",
           reviews: "Customer Reviews",
           delivery: "Delivery Information",
@@ -242,7 +147,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         ? Number(metadata.rating_value) || 4.8
         : 4.8
 
-  const highlights = buildProductHighlights({ product, locale })
   const isSaltProduct = isSaltNicotineProduct(product)
   const showReplacementTab = !isSaltProduct
   const deliveryCards =
@@ -387,26 +291,6 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
                 ))}
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="text-xl font-bold text-secondary-900">{labels.highlights}</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {highlights.map((item) => (
-              <div
-                key={item.key}
-                className="rounded-md border border-slate-200 bg-slate-50 p-4 text-center"
-              >
-                <div className="mb-2 flex justify-center">
-                  <HighlightIcon icon={item.icon} />
-                </div>
-                <div className="text-sm font-bold text-secondary-900">
-                  {isArabic ? item.titleAr : item.titleEn}
-                </div>
-                <div className="mt-1 text-xl text-slate-700">{item.value}</div>
-              </div>
-            ))}
           </div>
         </section>
 

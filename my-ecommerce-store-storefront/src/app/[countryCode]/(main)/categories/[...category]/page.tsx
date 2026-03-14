@@ -13,6 +13,7 @@ import {
   generateBreadcrumbJsonLd,
   generateFaqJsonLd,
 } from "@lib/util/structured-data"
+import type { ProductFilters } from "@lib/data/products"
 import CategoryTemplate from "@modules/categories/templates"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
@@ -21,6 +22,12 @@ type Props = {
   searchParams: Promise<{
     sortBy?: SortOptions
     page?: string
+    brand?: string
+    nicotine?: string
+    resistance?: string
+    flavor?: string
+    stock?: string
+    price?: string
   }>
 }
 
@@ -116,6 +123,19 @@ export default async function CategoryPage(props: Props) {
   const searchParams = await props.searchParams
   const params = await props.params
   const { sortBy, page } = searchParams
+  const parseCsv = (value?: string) =>
+    (value || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  const filters: ProductFilters = {
+    brand: parseCsv(searchParams.brand),
+    nicotine: parseCsv(searchParams.nicotine),
+    resistance: parseCsv(searchParams.resistance),
+    flavor: parseCsv(searchParams.flavor),
+    stock: parseCsv(searchParams.stock),
+    price: parseCsv(searchParams.price),
+  }
 
   const productCategory = await getCategoryByHandle(params.category, params.countryCode)
 
@@ -202,6 +222,7 @@ export default async function CategoryPage(props: Props) {
         sortBy={sortBy}
         page={page}
         countryCode={params.countryCode}
+        filters={filters}
       />
     </>
   )

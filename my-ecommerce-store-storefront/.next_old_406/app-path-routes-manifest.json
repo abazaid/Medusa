@@ -1,0 +1,5 @@
+{
+  "/[countryCode]/(main)/categories/[...category]/page": "/[countryCode]/categories/[...category]",
+  "/[countryCode]/(main)/page": "/[countryCode]",
+  "/[countryCode]/(main)/products/[handle]/page": "/[countryCode]/products/[handle]"
+}
