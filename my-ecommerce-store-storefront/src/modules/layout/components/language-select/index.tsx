@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation"
 import ReactCountryFlag from "react-country-flag"
 
 import { StateType } from "@lib/hooks/use-toggle-state"
-import { updateLocale } from "@lib/data/locale-actions"
 import { Locale } from "@lib/data/locales"
 
 type LanguageOption = {
@@ -132,7 +131,13 @@ const LanguageSelect = ({
 
   const handleChange = (option: LanguageOption) => {
     startTransition(async () => {
-      await updateLocale(option.code)
+      await fetch("/api/locale", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ locale: option.code }),
+      })
       close()
       router.refresh()
     })

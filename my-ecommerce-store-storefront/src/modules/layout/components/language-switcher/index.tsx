@@ -1,6 +1,5 @@
 "use client"
 
-import { updateLocale } from "@lib/data/locale-actions"
 import { usePathname, useRouter } from "next/navigation"
 import { useTransition } from "react"
 
@@ -34,7 +33,13 @@ export default function LanguageSwitcher({ currentLocale }: Props) {
     }
 
     startTransition(async () => {
-      await updateLocale(nextLocale)
+      await fetch("/api/locale", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ locale: nextLocale }),
+      })
       router.push(replaceLocaleInPath(pathname, nextLocale))
       router.refresh()
     })

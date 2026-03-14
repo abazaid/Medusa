@@ -25,7 +25,9 @@ export const getLocale = async (): Promise<string> => {
  */
 export const setLocaleCookie = async (locale: string) => {
   const cookies = await nextCookies()
-  cookies.set(LOCALE_COOKIE_NAME, DEFAULT_LOCALE, {
+  const nextLocale = locale?.toLowerCase() === "en" ? "en" : DEFAULT_LOCALE
+
+  cookies.set(LOCALE_COOKIE_NAME, nextLocale, {
     maxAge: 60 * 60 * 24 * 365, // 1 year
     httpOnly: false, // Allow client-side access
     sameSite: "strict",
@@ -38,7 +40,7 @@ export const setLocaleCookie = async (locale: string) => {
  * Also updates the cart with the new locale if one exists.
  */
 export const updateLocale = async (localeCode: string): Promise<string> => {
-  const nextLocale = DEFAULT_LOCALE
+  const nextLocale = localeCode?.toLowerCase() === "en" ? "en" : DEFAULT_LOCALE
   await setLocaleCookie(nextLocale)
 
   // Update cart with the new locale if a cart exists

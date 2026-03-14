@@ -1,4 +1,3 @@
-import { getLocale } from "@lib/data/locale-actions"
 import { getBaseURL } from "@lib/util/env"
 import { Metadata, Viewport } from "next"
 import Script from "next/script"
@@ -32,8 +31,6 @@ export default async function RootLayout(props: {
   children: React.ReactNode
   params: Promise<{ countryCode: string }>
 }) {
-  await getLocale()
-
   return (
     <html lang="ar" data-mode="light" dir="rtl">
       <head>
