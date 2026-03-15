@@ -5,15 +5,10 @@ import { convertToLocale } from "./money"
 const SAUDI_VAT_RATE = 0.15
 
 const applySaudiVat = (
-  amount: number | null | undefined,
-  isTaxInclusive?: boolean | null
+  amount: number | null | undefined
 ) => {
   if (typeof amount !== "number") {
     return 0
-  }
-
-  if (isTaxInclusive) {
-    return amount
   }
 
   return amount * (1 + SAUDI_VAT_RATE)
@@ -25,12 +20,10 @@ export const getPricesForVariant = (variant: any) => {
   }
 
   const calculatedAmount = applySaudiVat(
-    variant.calculated_price.calculated_amount,
-    variant.calculated_price.is_calculated_price_tax_inclusive
+    variant.calculated_price.calculated_amount
   )
   const originalAmount = applySaudiVat(
-    variant.calculated_price.original_amount,
-    variant.calculated_price.is_original_price_tax_inclusive
+    variant.calculated_price.original_amount
   )
 
   return {

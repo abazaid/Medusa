@@ -19,6 +19,7 @@ body {
   background:
     linear-gradient(180deg, #eef0f3 0%, #eef0f3 100%);
   color: #0f172a;
+  font-family: var(--font-tajawal), Tajawal, sans-serif;
 }
 
 @layer utilities {
@@ -127,5 +128,15 @@ body {
 
   .text-3xl-semi {
     @apply text-[32px] leading-[44px] font-semibold;
+  }
+
+  .product-available-dot {
+    @apply inline-block h-3.5 w-3.5 rounded-full bg-green-400;
+    box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.18);
+  }
+
+  .product-available-dot.not-available {
+    @apply bg-red-500;
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.16);
   }
 }

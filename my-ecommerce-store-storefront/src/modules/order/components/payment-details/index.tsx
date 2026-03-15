@@ -11,18 +11,28 @@ type PaymentDetailsProps = {
 
 const PaymentDetails = ({ order }: PaymentDetailsProps) => {
   const payment = order.payment_collections?.[0].payments?.[0]
+  const paidAt =
+    payment?.created_at
+      ? new Intl.DateTimeFormat("ar-SA", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(payment.created_at))
+      : null
 
   return (
     <div>
-      <Heading level="h2" className="flex flex-row text-3xl-regular my-6">
-        Payment
+      <Heading level="h2" className="my-6 flex flex-row text-2xl font-bold md:text-3xl">
+        الدفع
       </Heading>
       <div>
         {payment && (
-          <div className="flex items-start gap-x-1 w-full">
-            <div className="flex flex-col w-1/3">
+          <div className="flex w-full flex-col gap-6 md:flex-row md:items-start">
+            <div className="flex w-full flex-col md:w-1/3">
               <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                Payment method
+                طريقة الدفع
               </Text>
               <Text
                 className="txt-medium text-ui-fg-subtle"
@@ -31,9 +41,9 @@ const PaymentDetails = ({ order }: PaymentDetailsProps) => {
                 {paymentInfoMap[payment.provider_id].title}
               </Text>
             </div>
-            <div className="flex flex-col w-2/3">
+            <div className="flex w-full flex-col md:w-2/3">
               <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                Payment details
+                تفاصيل الدفع
               </Text>
               <div className="flex gap-2 txt-medium text-ui-fg-subtle items-center">
                 <Container className="flex items-center h-7 w-fit p-2 bg-ui-button-neutral-hover">
@@ -45,9 +55,7 @@ const PaymentDetails = ({ order }: PaymentDetailsProps) => {
                     : `${convertToLocale({
                         amount: payment.amount,
                         currency_code: order.currency_code,
-                      })} paid at ${new Date(
-                        payment.created_at ?? ""
-                      ).toLocaleString()}`}
+                      })}${paidAt ? ` - تم الدفع في ${paidAt}` : ""}`}
                 </Text>
               </div>
             </div>

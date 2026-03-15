@@ -28,13 +28,16 @@ export default function ProductPrice({
           "text-ui-fg-interactive": selectedPrice.price_type === "sale",
         })}
       >
-        {!variant && "From "}
+        {!variant && "يبدأ من "}
         <span
           data-testid="product-price"
           data-value={selectedPrice.calculated_price_number}
         >
           {selectedPrice.calculated_price}
         </span>
+      </span>
+      <span className="mt-1 text-sm text-ui-fg-subtle">
+        شامل ضريبة القيمة المضافة
       </span>
       {selectedPrice.price_type === "sale" && (
         <>

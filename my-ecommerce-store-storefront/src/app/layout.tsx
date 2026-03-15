@@ -1,10 +1,17 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata, Viewport } from "next"
+import { Tajawal } from "next/font/google"
 import Script from "next/script"
 import "styles/globals.css"
 
 const googleSiteVerification = process.env.NEXT_PUBLIC_GSC_VERIFICATION
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+const tajawal = Tajawal({
+  subsets: ["arabic", "latin"],
+  weight: ["200", "300", "400", "500", "700", "800", "900"],
+  variable: "--font-tajawal",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -33,7 +40,7 @@ export default async function RootLayout(props: {
 }) {
   return (
     <html lang="ar" data-mode="light" dir="rtl">
-      <body className="antialiased">
+      <body className={`${tajawal.variable} font-sans antialiased`}>
         <main className="min-h-screen">{props.children}</main>
         {gaMeasurementId ? (
           <>

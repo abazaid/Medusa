@@ -62,6 +62,9 @@ type FaqItem = {
 }
 
 type IconName =
+  | "tag"
+  | "battery"
+  | "multi"
   | "device"
   | "flame"
   | "drop"
@@ -136,11 +139,60 @@ const uniqueProducts = (items: HttpTypes.StoreProduct[]) => {
   })
 }
 
-const fillProducts = (
-  primary: HttpTypes.StoreProduct[],
-  fallback: HttpTypes.StoreProduct[],
+const getProductCategoryIds = (product: HttpTypes.StoreProduct) =>
+  new Set((product.categories || []).map((category) => category.id).filter(Boolean))
+
+const productMatchesCategory = (
+  product: HttpTypes.StoreProduct,
+  category?: HttpTypes.StoreProductCategory
+) => {
+  if (!category?.id) {
+    return false
+  }
+
+  return getProductCategoryIds(product).has(category.id)
+}
+
+const selectSectionProducts = ({
+  products,
+  limit: _limit,
+  category,
+  includeTokens,
+  excludeTokens = [],
+}: {
+  products: HttpTypes.StoreProduct[]
   limit: number
-) => uniqueProducts([...primary, ...fallback]).slice(0, limit)
+  category?: HttpTypes.StoreProductCategory
+  includeTokens: string[]
+  excludeTokens?: string[]
+}) => {
+  const directMatches = category
+    ? products.filter((product) => productMatchesCategory(product, category))
+    : []
+
+  const tokenMatches = products.filter((product) => {
+    const haystack = getProductText(product)
+
+    if (!includesAny(haystack, includeTokens)) {
+      return false
+    }
+
+    if (excludeTokens.length > 0 && includesAny(haystack, excludeTokens)) {
+      return false
+    }
+
+    return true
+  })
+
+  // Keep all matches here, then let the display layer pick the first in-stock items.
+  // Slicing too early can blank a section when the first few matches are out of stock.
+  return uniqueProducts([...directMatches, ...tokenMatches])
+}
+
+const filterAvailableProducts = (
+  products: HttpTypes.StoreProduct[],
+  limit: number
+) => uniqueProducts(products.filter((product) => isProductInStock(product))).slice(0, limit)
 
 const getProductText = (product: HttpTypes.StoreProduct) => {
   const categories = (product.categories || [])
@@ -257,6 +309,18 @@ const getCategoryHref = (
   return `/categories/${encodeURIComponent(getCategorySlug(category, locale))}`
 }
 
+const getCategoryHrefOverride = (
+  category: HttpTypes.StoreProductCategory | undefined,
+  locale: Locale,
+  hrefOverride?: string
+) => {
+  if (hrefOverride) {
+    return hrefOverride
+  }
+
+  return getCategoryHref(category, locale)
+}
+
 const sectionIntro = {
   ar: {
     featured: "تسوق الأقسام الرئيسية بسرعة عبر بطاقات واضحة تساعد العميل على الوصول مباشرة إلى النوع المناسب من المنتجات.",
@@ -267,8 +331,8 @@ const sectionIntro = {
     deals: "عروض مرتبة بصياغة تجارية مباشرة لزيادة متوسط السلة وتسهيل الوصول إلى أفضل فرص التوفير داخل المتجر.",
     brands: "ماركات عالمية موثوقة في عالم الفيب، مع روابط مباشرة لصفحات البراند لتسهيل التصفح والمقارنة.",
     why: "رسائل ثقة وتجربة شراء احترافية تبين سرعة الشحن، أصالة المنتجات، ودعم ما بعد البيع داخل المملكة.",
-    seo: "نص تحسيني مخصص لمحركات البحث يربط بين أنواع المنتجات، اهتمامات المستخدم السعودي، وأقسام المتجر الداخلية بشكل طبيعي.",
-    blog: "مقالات وأدلة تساعد العميل على الاختيار الصحيح، وتضيف عمقًا معرفيًا يرفع جودة الصفحة الرئيسية من منظور SEO.",
+    seo: "محتوى واضح يساعد العميل على التعرف على الأقسام والمنتجات المناسبة بسهولة وثقة.",
+    blog: "مقالات وأدلة تساعد العميل على اختيار الجهاز أو النكهة المناسبة، مع نصائح واضحة وتجربة شراء أكثر ثقة.",
     reviews: "تقييمات بصياغة واقعية وأسماء محلية تعزز الثقة وتدعم قرار الشراء من الصفحة الرئيسية.",
     newsletter: "اشترك لتصلك العروض الجديدة، التنبيهات المهمة، وأحدث المقالات والمنتجات المضافة للمتجر.",
   },
@@ -281,8 +345,8 @@ const sectionIntro = {
     deals: "Merchandising-led offer blocks built to increase basket size and surface the strongest value plays.",
     brands: "Trusted global vape brands with direct links to brand landing pages for easier comparison.",
     why: "Trust-led messaging focused on fast delivery, genuine products, and responsive support within Saudi Arabia.",
-    seo: "A search-focused content block that naturally connects product types, customer intent, and internal store pages.",
-    blog: "Editorial content and guides that help shoppers make better choices and add SEO depth to the homepage.",
+    seo: "Helpful content that makes it easier for shoppers to discover the right products and categories.",
+    blog: "Editorial content and guides that help shoppers choose the right device or flavor with more confidence.",
     reviews: "Social proof blocks with realistic customer language to strengthen trust from the homepage.",
     newsletter: "Stay updated with new deals, product launches, and fresh educational content from the store.",
   },
@@ -323,7 +387,7 @@ const copy = {
     dealsTitle: "Deals & Offers",
     brandsTitle: "Shop by Brand",
     whyTitle: "Why Choose Us",
-    seoTitle: "A Saudi vape store built around genuine products, clear buying paths, and stronger SEO",
+    seoTitle: "A Saudi vape store built around genuine products, trusted brands, and a clearer shopping experience",
     blogTitle: "Guides & Editorial Picks",
     reviewsTitle: "Customer Reviews",
     newsletterTitle: "Subscribe to our newsletter",
@@ -481,6 +545,29 @@ function Icon({ name, className = "h-6 w-6" }: { name: IconName; className?: str
   }
 
   switch (name) {
+    case "tag":
+      return (
+        <svg {...common}>
+          <path d="M20 10.2 13 17.2a2.2 2.2 0 0 1-3.1 0l-5-5a2.2 2.2 0 0 1 0-3.1l7-7.1H18a2 2 0 0 1 2 2z" />
+          <circle cx="15.2" cy="6.8" r="1.1" />
+        </svg>
+      )
+    case "battery":
+      return (
+        <svg {...common}>
+          <rect x="7" y="4.5" width="10" height="15" rx="2.2" />
+          <path d="M10 2.8h4" />
+          <path d="M11 8.5h2M11 11.5h2M11 14.5h2" />
+        </svg>
+      )
+    case "multi":
+      return (
+        <svg {...common}>
+          <rect x="4" y="5" width="16" height="14" rx="3" />
+          <path d="M8 12h4M10 10v4M14.5 11.2h2.8" />
+          <path d="M14.5 8.3h3.2v2.2" />
+        </svg>
+      )
     case "device":
       return (
         <svg {...common}>
@@ -776,42 +863,234 @@ export default async function StorefrontHome({
       .sort((a, b) => b.score - a.score)
       .at(0)?.category
 
-  const kitCategory = findCategory(
-    [
+  const electronicShishaCategory =
+    categories.find(
+      (category) =>
+        normalize(category.name) === normalize("أجهزة شيشة الكترونية") ||
+        normalize(category.name) === normalize("أجهزة الشيشة الإلكترونية") ||
+        category.handle === "category-jcs4dcv6"
+    ) ||
+    findCategory(["أجهزة شيشة الكترونية", "أجهزة الشيشة الإلكترونية", "vape mod"])
+
+  const vapePenCategory =
+    categories.find(
+      (category) =>
+        normalize(category.name) === normalize("سحبة سيجارة vape pen") ||
+        category.handle === "vape-pen"
+    ) || findCategory(["سحبة سيجارة vape pen", "vape pen"])
+
+  const saltCategory =
+    categories.find(
+      (category) =>
+        normalize(category.name) === normalize("نكهات سحبة سولت نيكوتين e juice") ||
+        category.handle === "e-juice"
+    ) || findCategory(["e-juice", "salt nic", "نكهات سولت", "سوائل إلكترونية"])
+
+  const disposableReadyCategory =
+    categories.find(
+      (category) =>
+        normalize(category.name) === normalize("سحبات جاهزة لمرة واحدة") ||
+        category.handle === "category-6f0drnd6"
+    ) ||
+    findCategory(["سحبات جاهزة لمرة واحدة", "disposable vape", "سحبة جاهزة"])
+
+  const bundlesCategory =
+    categories.find(
+      (category) =>
+        normalize(category.name) === normalize("بكجات توفير") ||
+        category.handle === "category-2ybk6r0q"
+    ) || findCategory(["بكجات توفير"])
+
+  const coilCategory = findCategory(["coils", "كويلات", "coil"])
+  const accessoryCategory = findCategory(["smoking accessories", "مستلزمات التبغ", "accessories"])
+  const podCategory =
+    categories.find(
+      (category) =>
+        normalize(category.name) === normalize("بودات - pods") || category.handle === "pods"
+    ) || findCategory(["pods", "بودات", "pod system", "بود سيستم"])
+
+  const kitCategory =
+    electronicShishaCategory ||
+    findCategory(
+      [
+        "vape mod",
+        "vape kit",
+        "pod system",
+        "system devices",
+        "اجهزة الفيب",
+        "أجهزة الفيب",
+        "أجهزة الشيشة الإلكترونية",
+        "أجهزة سحبة سيجارة",
+        "vape pen",
+        "جهاز فيب",
+      ],
+      ["pods", "بودات", "replacement pods", "prefilled pods", "بودات معبأة جاهزة"]
+    )
+  const liquidCategory = saltCategory
+  const disposableCategory = disposableReadyCategory
+  const bestSellers = filterAvailableProducts(availabilitySortedProducts, 8)
+  const deviceProducts = selectSectionProducts({
+    products: availabilitySortedProducts,
+    limit: 8,
+    category: electronicShishaCategory || kitCategory,
+    includeTokens: [
+      "vape mod",
+      "vape kit",
+      "device",
+      "mod",
+      "kit",
+      "أجهزة شيشة الكترونية",
+      "أجهزة الشيشة الإلكترونية",
+      "أجهزة الفيب",
+      "جهاز فيب",
+    ],
+    excludeTokens: [
+      "pod",
+      "pods",
+      "بود",
+      "بودات",
+      "replacement pods",
+      "salt",
+      "سولت",
+      "liquid",
+      "juice",
+      "disposable",
+      "سحبات جاهزة",
+      "coil",
+      "coils",
+      "كويل",
+      "كويلات",
+    ],
+  })
+  const vapePenProducts = selectSectionProducts({
+    products: availabilitySortedProducts,
+    limit: 8,
+    category: vapePenCategory,
+    includeTokens: ["vape pen", "سحبة سيجارة", "pen", "pod system"],
+    excludeTokens: ["salt", "سولت", "liquid", "juice", "coil", "coils", "كويل", "كويلات"],
+  })
+  const kitsProducts = selectSectionProducts({
+    products: availabilitySortedProducts,
+    limit: 8,
+    category: electronicShishaCategory || kitCategory,
+    includeTokens: [
       "vape mod",
       "vape kit",
       "pod system",
       "system devices",
-      "اجهزة الفيب",
       "أجهزة الفيب",
       "أجهزة الشيشة الإلكترونية",
       "أجهزة سحبة سيجارة",
       "vape pen",
       "جهاز فيب",
     ],
-    ["pods", "بودات", "replacement pods", "prefilled pods", "بودات معبأة جاهزة"]
-  )
-  const liquidCategory = findCategory(["e-juice", "e juice", "نكهات فيب", "salt nic", "نكهات سولت", "سوائل إلكترونية"])
-  const disposableCategory = findCategory([
-    "disposable vape",
-    "سحبات جاهزة",
-    "سحبات جاهزة disposable vape",
-    "سحبة جاهزة",
-  ])
-  const coilCategory = findCategory(["coils", "كويلات", "coil"])
-  const accessoryCategory = findCategory(["smoking accessories", "مستلزمات التبغ", "accessories"])
-  const podCategory = findCategory(["pods", "بودات", "pod system", "بود سيستم"])
-  const bestSellers = availabilitySortedProducts.slice(0, 8)
-  const kitsProducts = fillProducts(kits, inStockProducts, 8)
-  const liquidsProducts = fillProducts(liquids, inStockProducts, 8)
-  const disposableProducts = fillProducts(disposables, inStockProducts, 8)
+    excludeTokens: [
+      "replacement pods",
+      "prefilled pods",
+      "بودات معبأة جاهزة",
+      "coils",
+      "كويلات",
+      "salt",
+      "سولت",
+      "liquid",
+      "juice",
+      "disposable",
+      "سحبات جاهزة",
+    ],
+  })
+  const liquidsProducts = selectSectionProducts({
+    products: availabilitySortedProducts,
+    limit: 8,
+    category: liquidCategory,
+    includeTokens: [
+      "salt",
+      "nic salt",
+      "liquid",
+      "juice",
+      "نكهة",
+      "نكهات",
+      "سائل",
+      "سوائل",
+      "سولت",
+      "freebase",
+      "e-juice",
+      "e juice",
+      "e-liquid",
+      "e liquid",
+    ],
+    excludeTokens: [
+      "coil",
+      "coils",
+      "كويل",
+      "كويلات",
+      "pod",
+      "pods",
+      "بود",
+      "بودات",
+      "kit",
+      "device",
+      "mod",
+      "tank",
+      "battery",
+      "disposable",
+      "سحبات جاهزة",
+    ],
+  })
+  const disposableProducts = selectSectionProducts({
+    products: availabilitySortedProducts,
+    limit: 8,
+    category: disposableCategory,
+    includeTokens: [
+      "disposable vape",
+      "disposable",
+      "single use",
+      "one use",
+      "سحبات جاهزة",
+      "سحبة جاهزة",
+    ],
+    excludeTokens: [
+      "salt",
+      "سولت",
+      "liquid",
+      "juice",
+      "coil",
+      "coils",
+      "كويل",
+      "كويلات",
+      "pod system",
+      "pod",
+      "pods",
+      "بود",
+      "بودات",
+    ],
+  })
+  const coilProducts = selectSectionProducts({
+    products: availabilitySortedProducts,
+    limit: 8,
+    category: coilCategory || accessoryCategory,
+    includeTokens: ["coil", "coils", "كويل", "كويلات"],
+  })
+  const podProducts = selectSectionProducts({
+    products: availabilitySortedProducts,
+    limit: 8,
+    category: podCategory,
+    includeTokens: ["pod", "pods", "بود", "بودات"],
+    excludeTokens: ["pod system", "vape kit", "device", "جهاز", "أجهزة"],
+  })
+  const deviceDisplayProducts = filterAvailableProducts(deviceProducts, 8)
+  const kitsDisplayProducts = filterAvailableProducts(kitsProducts, 8)
+  const vapePenDisplayProducts = filterAvailableProducts(vapePenProducts, 8)
+  const podDisplayProducts = filterAvailableProducts(podProducts, 8)
+  const coilDisplayProducts = filterAvailableProducts(coilProducts, 8)
+  const liquidsDisplayProducts = filterAvailableProducts(liquidsProducts, 8)
+  const disposableDisplayProducts = filterAvailableProducts(disposableProducts, 8)
 
   const featuredCategories: CategoryCard[] = [
     {
       key: "new",
       title: activeLocale === "ar" ? "جديد" : "New",
       href: "/store?sortBy=created_at",
-      icon: "gift",
+      icon: "tag",
       image: getProductImage(inStockProducts[0]),
     },
     {
@@ -825,29 +1104,37 @@ export default async function StorefrontHome({
     {
       key: "disposable-alt",
       title: activeLocale === "ar" ? "بدائل السحبات الجاهزة" : "Disposable Alternatives",
-      href: getCategoryHref(disposableCategory, activeLocale),
-      icon: "device",
-      image: getProductImage(disposableProducts[0] || inStockProducts[2]),
+      href: getCategoryHrefOverride(
+        electronicShishaCategory,
+        activeLocale,
+        activeLocale === "ar" ? "/categories/أجهزة-شيشة-الكترونية" : undefined
+      ),
+      icon: "battery",
+      image: getProductImage(deviceDisplayProducts[0] || kitsDisplayProducts[0] || inStockProducts[2]),
     },
     {
       key: "kits",
-      title: activeLocale === "ar" ? "أجهزة الفيب" : "Vape Kits",
-      href: getCategoryHref(kitCategory, activeLocale),
+      title: activeLocale === "ar" ? "أجهزة الشيشة الإلكترونية" : "Vape Kits",
+      href: getCategoryHrefOverride(
+        electronicShishaCategory,
+        activeLocale,
+        activeLocale === "ar" ? "/categories/أجهزة-شيشة-الكترونية" : undefined
+      ),
       icon: "device",
-      image: getProductImage(kitsProducts[0] || inStockProducts[3]),
+      image: getProductImage(deviceDisplayProducts[0] || kitsDisplayProducts[0] || inStockProducts[3]),
     },
     {
       key: "liquids",
       title: activeLocale === "ar" ? "السوائل الإلكترونية" : "E-Liquids",
-      href: getCategoryHref(liquidCategory, activeLocale),
+      href: getCategoryHref(saltCategory, activeLocale),
       icon: "drop",
-      image: getProductImage(liquidsProducts[0] || inStockProducts[4]),
+      image: getProductImage(liquidsDisplayProducts[0] || inStockProducts[4]),
     },
     {
       key: "multibuys",
       title: activeLocale === "ar" ? "بكجات التوفير" : "Multibuys",
-      href: "/store",
-      icon: "gift",
+      href: getCategoryHref(bundlesCategory, activeLocale),
+      icon: "multi",
       image: getProductImage(inStockProducts[5]),
     },
     {
@@ -855,14 +1142,14 @@ export default async function StorefrontHome({
       title: activeLocale === "ar" ? "الكويلات" : "Coils",
       href: getCategoryHref(coilCategory || accessoryCategory, activeLocale),
       icon: "coil",
-      image: getProductImage(accessories[0] || inStockProducts[6]),
+      image: getProductImage(coilDisplayProducts[0] || accessories[0] || inStockProducts[6]),
     },
     {
       key: "pods",
       title: activeLocale === "ar" ? "البودات" : "Pods",
       href: getCategoryHref(podCategory, activeLocale),
       icon: "pod",
-      image: getProductImage(accessories[1] || inStockProducts[7]),
+      image: getProductImage(podDisplayProducts[0] || accessories[1] || inStockProducts[7]),
     },
   ]
 
@@ -902,8 +1189,12 @@ export default async function StorefrontHome({
           ? "تصفح موديلات مختارة من أجهزة الفيب والبود سيستم مع خيارات واضحة وروابط مباشرة إلى الأقسام الأكثر طلبًا."
           : "Browse selected devices, pod systems, and easier paths into the most demanded sections.",
       buttonLabel: labels.heroButton,
-      href: getCategoryHref(kitCategory, activeLocale),
-      image: getProductImage(kitsProducts[0] || bestSellers[0]),
+      href: getCategoryHrefOverride(
+        electronicShishaCategory,
+        activeLocale,
+        activeLocale === "ar" ? "/categories/أجهزة-شيشة-الكترونية" : undefined
+      ),
+      image: getProductImage(deviceDisplayProducts[0] || kitsDisplayProducts[0] || bestSellers[0]),
     },
     {
       id: "hero-liquids",
@@ -917,8 +1208,8 @@ export default async function StorefrontHome({
           ? "الفواكه، التبغ، النعناع، والخلطات الباردة في قسم واضح يساعد العميل على الوصول السريع إلى النكهة المناسبة."
           : "Fruit, tobacco, mint, and icy blends organized into a cleaner buying path.",
       buttonLabel: labels.heroButton,
-      href: getCategoryHref(liquidCategory, activeLocale),
-      image: getProductImage(liquidsProducts[0] || bestSellers[1]),
+      href: getCategoryHref(saltCategory, activeLocale),
+      image: getProductImage(liquidsDisplayProducts[0] || bestSellers[1]),
     },
     {
       id: "hero-disposables",
@@ -932,8 +1223,8 @@ export default async function StorefrontHome({
           ? "قسم مخصص للسحبات الجاهزة والخيارات السريعة مع إبراز المنتجات المتوفرة بالمخزون أولًا."
           : "A focused section for disposable products with available stock surfaced first.",
       buttonLabel: labels.heroButton,
-      href: getCategoryHref(disposableCategory, activeLocale),
-      image: getProductImage(disposableProducts[0] || bestSellers[2]),
+      href: getCategoryHref(disposableReadyCategory, activeLocale),
+      image: getProductImage(disposableDisplayProducts[0] || bestSellers[2]),
     },
   ]
 
@@ -945,7 +1236,7 @@ export default async function StorefrontHome({
         activeLocale === "ar"
           ? "وفر عند شراء أكثر من نكهة من قسم النيكوتين سولت مع خيارات عملية للاستخدام اليومي."
           : "Save more when shopping across the nic salt range.",
-      href: getCategoryHref(liquidCategory, activeLocale),
+      href: getCategoryHref(saltCategory, activeLocale),
       icon: "gift" as IconName,
     },
     {
@@ -955,7 +1246,7 @@ export default async function StorefrontHome({
         activeLocale === "ar"
           ? "خيارات سريعة للشراء مع تركيز على المنتجات المطلوبة والمخزون المتوفر."
           : "Fast-moving disposable products with clearer value-led merchandising.",
-      href: getCategoryHref(disposableCategory, activeLocale),
+      href: getCategoryHref(disposableReadyCategory, activeLocale),
       icon: "flame" as IconName,
     },
     {
@@ -1003,8 +1294,8 @@ export default async function StorefrontHome({
       title: activeLocale === "ar" ? "محتوى يساعد على الاختيار" : "Buying Guidance",
       text:
         activeLocale === "ar"
-          ? "قسم المدونة والأدلة يضيف قيمة حقيقية للعميل ويقوي الصفحة الرئيسية من منظور SEO."
-          : "Guides and editorial content add real shopper value and stronger SEO depth.",
+          ? "قسم المدونة والأدلة يقدّم محتوى مفيدًا يساعد العميل على المقارنة والاختيار بثقة قبل الشراء."
+          : "Guides and editorial content help shoppers compare options and buy with confidence.",
       icon: "support" as IconName,
     },
   ]
@@ -1059,14 +1350,21 @@ export default async function StorefrontHome({
   const seoLinks = {
     brands: "/brands",
     blog: "/blog",
-    kits: getCategoryHref(kitCategory, activeLocale),
-    liquids: getCategoryHref(liquidCategory, activeLocale),
-    disposables: getCategoryHref(disposableCategory, activeLocale),
+    kits: getCategoryHrefOverride(
+      electronicShishaCategory,
+      activeLocale,
+      activeLocale === "ar" ? "/categories/أجهزة-شيشة-الكترونية" : undefined
+    ),
+    liquids: getCategoryHref(saltCategory, activeLocale),
+    disposables: getCategoryHref(disposableReadyCategory, activeLocale),
     accessories: getCategoryHref(accessoryCategory || coilCategory, activeLocale),
   }
 
   return (
     <div className="bg-[#eef1f4] pb-16">
+      <Heading level="h1" className="sr-only">
+        {activeLocale === "ar" ? "مركز الفيب السعودي" : "Vape Hub KSA"}
+      </Heading>
       <section className="border-b border-slate-200 bg-white/70">
         <div className="content-container py-6 md:py-8">
           <HeroCarousel slides={heroSlides} locale={activeLocale} />
@@ -1168,40 +1466,48 @@ export default async function StorefrontHome({
             cards={[
               {
                 key: "kits-alt",
-                title: activeLocale === "ar" ? "بدائل السحبات الجاهزة" : "Disposable Alternatives",
-                href: getCategoryHref(disposableCategory, activeLocale),
-                image: getProductImage(disposableProducts[0] || kitsProducts[0]),
+                title: activeLocale === "ar" ? "سحبة سيجارة Vape pen" : "Vape Pen",
+                href: getCategoryHref(vapePenCategory, activeLocale),
+                image: getProductImage(vapePenDisplayProducts[0] || kitsDisplayProducts[0]),
               },
               {
                 key: "kits-pod",
-                title: activeLocale === "ar" ? "أجهزة بود سيستم" : "Pod Vape Kits",
-                href: getCategoryHref(podCategory || kitCategory, activeLocale),
-                image: getProductImage(kitsProducts[1] || kitsProducts[0]),
+                title: activeLocale === "ar" ? "بودات وقطع غيار" : "Pods & Refills",
+                href: getCategoryHref(podCategory, activeLocale),
+                image: getProductImage(podDisplayProducts[0] || kitsDisplayProducts[0]),
               },
               {
                 key: "kits-starter",
                 title: activeLocale === "ar" ? "أجهزة بداية" : "Starter Vape Kits",
-                href: getCategoryHref(kitCategory, activeLocale),
-                image: getProductImage(kitsProducts[2] || kitsProducts[0]),
+                href: getCategoryHrefOverride(
+                  electronicShishaCategory,
+                  activeLocale,
+                  activeLocale === "ar" ? "/categories/أجهزة-شيشة-الكترونية" : undefined
+                ),
+                image: getProductImage(deviceDisplayProducts[1] || deviceDisplayProducts[0] || kitsDisplayProducts[0]),
               },
               {
                 key: "kits-power",
                 title: activeLocale === "ar" ? "أجهزة متقدمة" : "Sub-Ohm Vape Kits",
-                href: getCategoryHref(kitCategory, activeLocale),
-                image: getProductImage(kitsProducts[3] || kitsProducts[0]),
+                href: getCategoryHrefOverride(
+                  electronicShishaCategory,
+                  activeLocale,
+                  activeLocale === "ar" ? "/categories/أجهزة-شيشة-الكترونية" : undefined
+                ),
+                image: getProductImage(deviceDisplayProducts[2] || deviceDisplayProducts[0] || kitsDisplayProducts[0]),
               },
               {
                 key: "kits-bundles",
                 title: activeLocale === "ar" ? "بكجات أجهزة الفيب" : "Bundle Vape Kits",
-                href: "/store",
-                image: getProductImage(kitsProducts[4] || kitsProducts[0]),
+                href: getCategoryHref(bundlesCategory, activeLocale),
+                image: getProductImage(deviceDisplayProducts[3] || kitsDisplayProducts[0]),
               },
             ]}
             viewAllLabel={activeLocale === "ar" ? "عرض جميع أجهزة الفيب" : "View All Vape Kits"}
             viewAllHref={seoLinks.kits}
           />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {kitsProducts.map((product) => (
+            {kitsDisplayProducts.map((product) => (
               <ProductPreview key={product.id} product={product} region={region} />
             ))}
           </div>
@@ -1227,7 +1533,7 @@ export default async function StorefrontHome({
                     ? "نكهات فاكهية مطلوبة يوميًا وتناسب شريحة واسعة من المستخدمين."
                     : "Popular fruit-led flavour profiles for daily use.",
                 href: seoLinks.liquids,
-                image: getProductImage(liquidsProducts[0]),
+                image: getProductImage(liquidsDisplayProducts[0]),
                 icon: "drop",
               },
               {
@@ -1238,7 +1544,7 @@ export default async function StorefrontHome({
                     ? "خيارات أقرب للذوق التقليدي مع وضوح نكهة وثبات في التجربة."
                     : "Traditional flavour directions with clarity and consistency.",
                 href: seoLinks.liquids,
-                image: getProductImage(liquidsProducts[1]),
+                image: getProductImage(liquidsDisplayProducts[1]),
                 icon: "star",
               },
               {
@@ -1249,13 +1555,13 @@ export default async function StorefrontHome({
                     ? "خلطات باردة ومنعشة تبرز في أقسام النكهات الأكثر طلبًا."
                     : "Cooling blends that stand out in high-demand flavour ranges.",
                 href: seoLinks.liquids,
-                image: getProductImage(liquidsProducts[2]),
+                image: getProductImage(liquidsDisplayProducts[2]),
                 icon: "flame",
               },
             ]}
           />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {liquidsProducts.map((product) => (
+            {liquidsDisplayProducts.map((product) => (
               <ProductPreview key={product.id} product={product} region={region} />
             ))}
           </div>
@@ -1271,7 +1577,7 @@ export default async function StorefrontHome({
             actionHref={seoLinks.disposables}
           />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {disposableProducts.map((product) => (
+            {disposableDisplayProducts.map((product) => (
               <ProductPreview key={product.id} product={product} region={region} />
             ))}
           </div>
@@ -1377,17 +1683,20 @@ export default async function StorefrontHome({
             <div className="grid gap-8 p-6 md:p-8 lg:grid-cols-[1.15fr_0.85fr]">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.24em] text-[#18a7ff]">
-                  SEO CONTENT
+                  {activeLocale === "ar" ? "تجربة شراء موثوقة" : "Trusted Shopping Experience"}
                 </p>
-                <Heading level="h2" className="mt-3 text-[2rem] font-black tracking-tight text-[#11233e] md:text-[2.4rem]">
+                <Heading
+                  level="h2"
+                  className="mt-3 max-w-[18ch] text-[1.85rem] font-extrabold leading-[1.18] tracking-[-0.02em] text-[#11233e] md:text-[2.15rem] lg:text-[2.35rem]"
+                >
                   {labels.seoTitle}
                 </Heading>
                 <div className="mt-5 space-y-4 text-[15px] leading-8 text-slate-700">
                   {activeLocale === "ar" ? (
                     <>
                       <p>
-                        إذا كنت تبحث عن متجر فيب في السعودية يجمع بين تنسيق احترافي، تصفح واضح، ومنتجات
-                        أصلية من أشهر الماركات، فهذه الصفحة الرئيسية صممت لتقود العميل مباشرة إلى
+                        إذا كنت تبحث عن متجر فيب في السعودية يجمع بين المنتجات الأصلية، التصفح الواضح،
+                        وخيارات شراء موثوقة، فهذه الصفحة الرئيسية تساعدك على الوصول بسرعة إلى
                         أهم الأقسام مثل{" "}
                         <LocalizedClientLink href={seoLinks.kits} className="font-bold text-[#0f7fd6] hover:text-[#18a7ff]">
                           أجهزة الفيب
@@ -1403,7 +1712,7 @@ export default async function StorefrontHome({
                         .
                       </p>
                       <p>
-                        نعتمد في عرض الصفحة على تقسيمات تجارية واضحة تساعد المستخدم السعودي على المقارنة
+                        نعتمد في عرض الصفحة على تقسيمات واضحة تساعد العميل السعودي على المقارنة
                         السريعة بين الأجهزة، البودات، السوائل، والكويلات، مع إبراز الماركات الموثوقة عبر
                         صفحة{" "}
                         <LocalizedClientLink href={seoLinks.brands} className="font-bold text-[#0f7fd6] hover:text-[#18a7ff]">
@@ -1416,9 +1725,8 @@ export default async function StorefrontHome({
                         .
                       </p>
                       <p>
-                        الهدف من هذا البناء ليس فقط تحسين تجربة المستخدم، بل أيضًا تقوية الصفحة الرئيسية
-                        سيويًا عبر نصوص مفيدة، أقسام مترابطة، ومسارات واضحة إلى صفحات المنتجات
-                        والتصنيفات وملحقات الاستخدام اليومي مثل{" "}
+                        الهدف من هذا التنظيم هو تقديم تجربة شراء مريحة وواضحة، مع محتوى مفيد ومسارات
+                        سريعة إلى صفحات المنتجات والتصنيفات وملحقات الاستخدام اليومي مثل{" "}
                         <LocalizedClientLink href={seoLinks.accessories} className="font-bold text-[#0f7fd6] hover:text-[#18a7ff]">
                           الكويلات والإكسسوارات
                         </LocalizedClientLink>
@@ -1428,7 +1736,7 @@ export default async function StorefrontHome({
                   ) : (
                     <>
                       <p>
-                        This homepage is structured to help Saudi shoppers reach key sections such as{" "}
+                        This homepage is built to help Saudi shoppers reach key sections quickly, such as{" "}
                         <LocalizedClientLink href={seoLinks.kits} className="font-bold text-[#0f7fd6] hover:text-[#18a7ff]">
                           vape kits
                         </LocalizedClientLink>
@@ -1443,7 +1751,7 @@ export default async function StorefrontHome({
                         .
                       </p>
                       <p>
-                        It combines cleaner merchandising, trust-led messaging, and clear internal linking to{" "}
+                        It combines clear browsing, trusted product discovery, and helpful routes to{" "}
                         <LocalizedClientLink href={seoLinks.brands} className="font-bold text-[#0f7fd6] hover:text-[#18a7ff]">
                           brand pages
                         </LocalizedClientLink>{" "}
@@ -1459,13 +1767,13 @@ export default async function StorefrontHome({
               </div>
               <div className="rounded-sm bg-gradient-to-br from-[#11233e] via-[#173457] to-[#0f7fd6] p-6 text-white">
                 <p className="text-sm font-black uppercase tracking-[0.22em] text-white/75">
-                  {activeLocale === "ar" ? "نقاط قوة الصفحة" : "Homepage strengths"}
+                  {activeLocale === "ar" ? "لماذا يفضّل العملاء التسوق معنا" : "Why Shoppers Choose Us"}
                 </p>
                 <ul className="mt-5 space-y-4 text-sm leading-7 text-white/90">
-                  <li>{activeLocale === "ar" ? "ربط داخلي مباشر إلى التصنيفات والماركات والمنتجات المهمة." : "Direct internal links into key categories, brands, and products."}</li>
-                  <li>{activeLocale === "ar" ? "ترتيب منطقي للأقسام التجارية يوازي سلوك الشراء الفعلي." : "A logical merchandising order aligned with real shopping intent."}</li>
-                  <li>{activeLocale === "ar" ? "إبراز المنتجات المتوفرة بالمخزون أولًا في الأقسام الرئيسية." : "In-stock products surfaced first across the key product sections."}</li>
-                  <li>{activeLocale === "ar" ? "نصوص عربية قوية تناسب السوق السعودي وتخدم السيو." : "Arabic-first SEO copy written for the Saudi vape market."}</li>
+                  <li>{activeLocale === "ar" ? "منتجات أصلية مختارة من ماركات موثوقة ومطلوبة في السوق السعودي." : "Authentic products from trusted brands popular in the Saudi market."}</li>
+                  <li>{activeLocale === "ar" ? "تنقل واضح بين الأجهزة والنكهات والملحقات لتسهيل الوصول لما تحتاجه بسرعة." : "Clear navigation across devices, flavors, and accessories for faster discovery."}</li>
+                  <li>{activeLocale === "ar" ? "إبراز المنتجات المتوفرة بالمخزون والعروض المهمة بشكل مباشر وواضح." : "In-stock products and important offers are highlighted clearly."}</li>
+                  <li>{activeLocale === "ar" ? "محتوى عربي احترافي يساعدك على المقارنة واتخاذ قرار شراء واثق." : "Professional Arabic content that helps shoppers compare and buy with confidence."}</li>
                 </ul>
               </div>
             </div>
@@ -1532,8 +1840,8 @@ export default async function StorefrontHome({
             title={activeLocale === "ar" ? "الأسئلة الشائعة" : "Frequently Asked Questions"}
             text={
               activeLocale === "ar"
-                ? "أسئلة مختارة بصياغة قوية تخدم السيو وتجاوب على أكثر الاستفسارات التي يبحث عنها العميل قبل شراء أجهزة الفيب والنكهات والسحبات الجاهزة."
-                : "SEO-focused questions covering the most common pre-purchase concerns."
+                ? "أسئلة مختارة تجيب على أهم الاستفسارات التي يبحث عنها العميل قبل شراء أجهزة الفيب والنكهات والسحبات الجاهزة."
+                : "Selected questions covering the most common pre-purchase concerns."
             }
           />
           <div className="grid gap-x-6 gap-y-0 md:grid-cols-2">

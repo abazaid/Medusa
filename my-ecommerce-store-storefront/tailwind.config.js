@@ -136,7 +136,8 @@ module.exports = {
       },
       fontFamily: {
         sans: [
-          "Inter",
+          "var(--font-tajawal)",
+          "Tajawal",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",

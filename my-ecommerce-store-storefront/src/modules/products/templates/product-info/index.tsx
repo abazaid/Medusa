@@ -1,6 +1,7 @@
 import { HttpTypes } from "@medusajs/types"
 import { Heading } from "@medusajs/ui"
 import { getProductBrand } from "@lib/data/brands"
+import { isProductInStock } from "@lib/util/product-availability"
 import { getCategorySlug } from "@lib/util/slug"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
@@ -24,6 +25,14 @@ const ProductInfo = ({
   const descriptionHtml = sanitizeDescription(product.description)
   const isArabic = countryCode.toLowerCase() === "ar"
   const productBrand = getProductBrand(product)
+  const inStock = isProductInStock(product)
+  const availabilityLabel = isArabic
+    ? inStock
+      ? "متوفر"
+      : "غير متوفر حاليًا"
+    : inStock
+      ? "In stock"
+      : "Currently unavailable"
 
   return (
     <div id="product-info">
@@ -79,21 +88,14 @@ const ProductInfo = ({
           />
         ) : null}
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-secondary-600">
-            {isArabic ? "روابط مفيدة" : "Helpful links"}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
-            <LocalizedClientLink href="/store" className="text-primary-700 hover:text-primary-600">
-              {isArabic ? "تصفح كل المنتجات" : "Browse all products"}
-            </LocalizedClientLink>
-            <LocalizedClientLink href="/brands" className="text-primary-700 hover:text-primary-600">
-              {isArabic ? "جميع الماركات" : "All brands"}
-            </LocalizedClientLink>
-            <LocalizedClientLink href="/blog" className="text-primary-700 hover:text-primary-600">
-              {isArabic ? "مدونة المتجر" : "Store blog"}
-            </LocalizedClientLink>
-          </div>
+        <div className="product-availablity flex items-center gap-2">
+          <span
+            className={`product-available-dot mx-1 ${inStock ? "" : "not-available"}`}
+            aria-hidden="true"
+          />
+          <strong className={inStock ? "text-green-500" : "text-red-500"}>
+            {availabilityLabel}
+          </strong>
         </div>
       </div>
     </div>

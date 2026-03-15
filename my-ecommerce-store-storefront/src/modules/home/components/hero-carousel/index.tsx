@@ -59,9 +59,9 @@ export default function HeroCarousel({
                 <p className="text-xs font-black uppercase tracking-[0.24em] text-[#18a7ff]">
                   {slide.eyebrow}
                 </p>
-                <h1 className="mt-4 max-w-xl text-[2rem] font-black leading-tight tracking-tight text-[#11233e] md:text-[3.25rem]">
+                <h2 className="mt-4 max-w-xl text-[2rem] font-black leading-tight tracking-tight text-[#11233e] md:text-[3.25rem]">
                   {slide.title}
-                </h1>
+                </h2>
                 <p className="mt-4 max-w-xl text-sm leading-8 text-slate-600 md:text-[15px]">
                   {slide.text}
                 </p>

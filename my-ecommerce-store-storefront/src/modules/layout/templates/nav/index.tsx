@@ -75,8 +75,8 @@ const menuRules: MenuRule[] = [
   },
   {
     key: "system-devices",
-    label: "أجهزة سحبة سيجارة - Pod System",
-    tokens: ["system", "اجهزة سحبة سيجارة", "pod system"],
+    label: "سحبة سيجارة Vape pen",
+    tokens: ["vape pen", "vapepen", "سحبة سيجارة", "أجهزة سحبة سيجارة", "pen device"],
   },
   {
     key: "salt-nic",
@@ -90,8 +90,9 @@ const menuRules: MenuRule[] = [
   },
   {
     key: "mod-devices",
-    label: "أجهز الشيشة الإلكترونية - Vape Mod",
+    label: "أجهزة الشيشة الإلكترونية",
     tokens: ["mod", "أجهزة الشيشة الإلكترونية", "vape mod"],
+    hrefOverride: "/categories/أجهزة-شيشة-الكترونية",
     children: [
       { key: "tanks", label: "تانكات شيشة - Tank", tokens: ["tank", "تانكات"] },
       {
@@ -133,28 +134,6 @@ const menuRules: MenuRule[] = [
     tokens: ["pouches", "أظرف النيكوتين"],
   },
   {
-    key: "accessories",
-    label: "مستلزمات التبغ - Smoking Accessories",
-    tokens: ["accessories", "مستلزمات التبغ", "مستلزمات الفيب"],
-    children: [
-      {
-        key: "lighters",
-        label: "ولاعات سجائر و دخان",
-        tokens: ["ولاعات", "ولاعة", "lighter"],
-      },
-      {
-        key: "ashtrays",
-        label: "طفايات سجائر و دخان",
-        tokens: ["طفايات", "طفاية", "ashtray"],
-      },
-      {
-        key: "rolling-paper",
-        label: "ورق لف السجائر - Rolling Paper",
-        tokens: ["rolling paper", "ورق لف"],
-      },
-    ],
-  },
-  {
     key: "shisha-molasses",
     label: "معسلات - Shisha Molasses",
     tokens: ["molasses", "معسلات"],
@@ -164,7 +143,6 @@ const menuRules: MenuRule[] = [
     label: "فحم شيشة - Shisha Charcoal",
     tokens: ["charcoal", "فحم شيشة"],
   },
-  { key: "shisha", label: "شيشة تقليدية - Shisha", tokens: ["shisha", "شيشة تقليدية"] },
   {
     key: "brands",
     label: "الماركات التجارية - Brands",
