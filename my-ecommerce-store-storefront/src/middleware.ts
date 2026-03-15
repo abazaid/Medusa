@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
   if (first === "sa") {
     const restPath = `/${segments.slice(1).join("/")}`
     const destination = `${request.nextUrl.origin}/ar${restPath === "/" ? "" : restPath}${search || ""}`
-    const response = NextResponse.redirect(destination, 307)
+    const response = NextResponse.redirect(destination, 308)
     response.cookies.set("_medusa_locale", "ar", {
       maxAge: 60 * 60 * 24 * 365,
       httpOnly: false,
@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
   // Force locale prefix in URL: /ar/*
   if (!SUPPORTED_LOCALE_SEGMENTS.has(first)) {
     const destination = `${request.nextUrl.origin}/${DEFAULT_LOCALE_SEGMENT}${normalizedPathname}${search || ""}`
-    const response = NextResponse.redirect(destination, 307)
+    const response = NextResponse.redirect(destination, 308)
     response.cookies.set("_medusa_locale", DEFAULT_LOCALE_SEGMENT, {
       maxAge: 60 * 60 * 24 * 365,
       httpOnly: false,

@@ -1,11 +1,16 @@
 import { Metadata } from "next"
-import { notFound, redirect } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { cache } from "react"
 import { listProducts } from "@lib/data/products"
 import { resolveProductIdFromSlugIndex } from "@lib/data/product-slug-index"
 import { getRegion } from "@lib/data/regions"
 import { getBaseURL } from "@lib/util/env"
-import { getProductSlug, normalizeComparableSlug, stripSkuSuffix } from "@lib/util/slug"
+import {
+  getProductSlug,
+  getProductSlugCandidates,
+  normalizeComparableSlug,
+  stripSkuSuffix,
+} from "@lib/util/slug"
 import ProductTemplate from "@modules/products/templates"
 import { HttpTypes } from "@medusajs/types"
 
@@ -34,50 +39,6 @@ const findProductBySlug = cache(async (countryCode: string, rawHandle: string) =
     }
   }
 
-  const searchCandidates = Array.from(
-    new Set([
-      stripSkuSuffix(decodedHandle).replace(/-/g, " "),
-    ].filter(Boolean))
-  )
-
-  for (const q of searchCandidates) {
-    const { response } = await listProducts({
-      countryCode,
-      queryParams: {
-        q,
-        limit: 30,
-        fields: "id,handle,title,metadata",
-      },
-    })
-
-    const matched = (response.products || []).find((product) => {
-      const slugAr = normalizeComparableSlug(getProductSlug(product, "ar"))
-      const slugEn = normalizeComparableSlug(getProductSlug(product, "en"))
-      const handleRaw = normalizeComparableSlug(product.handle || "")
-      const handleClean = normalizeComparableSlug(stripSkuSuffix(product.handle || ""))
-      return (
-        normalizedTarget === slugAr ||
-        normalizedTarget === slugEn ||
-        normalizedTarget === handleRaw ||
-        normalizedTarget === handleClean
-      )
-    })
-
-    if (matched?.id) {
-      const fullProduct = await listProducts({
-        countryCode,
-        queryParams: {
-          id: [matched.id],
-          limit: 1,
-        },
-      }).then(({ response }) => response.products[0])
-
-      if (fullProduct) {
-        return fullProduct
-      }
-    }
-  }
-
   const indexedId = await resolveProductIdFromSlugIndex({
     countryCode,
     rawSlug: decodedHandle,
@@ -94,6 +55,48 @@ const findProductBySlug = cache(async (countryCode: string, rawHandle: string) =
 
     if (fullProduct) {
       return fullProduct
+    }
+  }
+
+  const searchCandidates = Array.from(
+    new Set([
+      stripSkuSuffix(decodedHandle).replace(/-/g, " "),
+      stripSkuSuffix(
+        decodedHandle.replace(/[a-z0-9-]+/gi, " ").replace(/\s+/g, " ").trim()
+      ),
+    ].filter(Boolean))
+  )
+
+  for (const q of searchCandidates) {
+    const { response } = await listProducts({
+      countryCode,
+      queryParams: {
+        q,
+        limit: 30,
+        fields: "id,handle,title,metadata",
+      },
+    })
+
+    const matched = (response.products || []).find((product) => {
+      const candidates = getProductSlugCandidates(product).map((candidate) =>
+        normalizeComparableSlug(candidate)
+      )
+
+      return candidates.includes(normalizedTarget)
+    })
+
+    if (matched?.id) {
+      const fullProduct = await listProducts({
+        countryCode,
+        queryParams: {
+          id: [matched.id],
+          limit: 1,
+        },
+      }).then(({ response }) => response.products[0])
+
+      if (fullProduct) {
+        return fullProduct
+      }
     }
   }
 
@@ -200,7 +203,7 @@ export default async function ProductPage(props: Props) {
     const suffix = selectedVariantId
       ? `?v_id=${encodeURIComponent(selectedVariantId)}`
       : ""
-    redirect(
+    permanentRedirect(
       `/${params.countryCode}/products/${encodeURIComponent(canonicalSlug)}${suffix}`
     )
   }

@@ -20,6 +20,20 @@ const toISODate = (value?: string | Date | null) => {
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString()
 }
 
+const toAbsoluteUrl = (baseUrl: string, value?: string | null) => {
+  const input = (value || "").trim()
+
+  if (!input) {
+    return ""
+  }
+
+  try {
+    return new URL(input, baseUrl).toString()
+  } catch {
+    return ""
+  }
+}
+
 const listProductsWithImages = async () => {
   const products: any[] = []
   let page = 1
@@ -80,23 +94,25 @@ export async function GET() {
 
   const productEntries = LOCALES.flatMap((locale) =>
     (products || [])
-      .filter((product) => !!product.thumbnail)
+      .filter((product) => !!toAbsoluteUrl(baseUrl, product.thumbnail))
       .map((product) => ({
         loc: `${baseUrl}/${locale}/products/${encodeURIComponent(
           getProductSlug(product, locale)
         )}`,
         lastmod: toISODate(product.updated_at),
-        images: product.thumbnail ? [product.thumbnail] : [],
+        images: [toAbsoluteUrl(baseUrl, product.thumbnail)].filter(Boolean),
       }))
   )
 
   const blogEntries = LOCALES.flatMap((locale) =>
     blogPosts
-      .filter((post) => !!post.handle && !!post.cover_image)
+      .filter(
+        (post) => !!post.handle && !!toAbsoluteUrl(baseUrl, post.cover_image)
+      )
       .map((post) => ({
         loc: `${baseUrl}/${locale}/blog/${encodeURIComponent(post.handle)}`,
         lastmod: toISODate(post.updated_at || post.published_at),
-        images: post.cover_image ? [post.cover_image] : [],
+        images: [toAbsoluteUrl(baseUrl, post.cover_image)].filter(Boolean),
       }))
   )
 

@@ -8,6 +8,20 @@ import { getProductSlug } from "@lib/util/slug"
 const LOCALES = ["ar"] as const
 const STORE_COUNTRY_CODE = "sa"
 
+const toAbsoluteUrl = (baseUrl: string, value?: string | null) => {
+  const input = (value || "").trim()
+
+  if (!input) {
+    return ""
+  }
+
+  try {
+    return new URL(input, baseUrl).toString()
+  } catch {
+    return ""
+  }
+}
+
 const listProductsWithImages = async () => {
   const products: any[] = []
   let page = 1
@@ -42,23 +56,25 @@ export default async function imageSitemap(): Promise<MetadataRoute.Sitemap> {
 
   const productEntries: MetadataRoute.Sitemap = LOCALES.flatMap((locale) =>
     (products || [])
-      .filter((product) => !!product.thumbnail)
+      .filter((product) => !!toAbsoluteUrl(baseUrl, product.thumbnail))
       .map((product) => ({
         url: `${baseUrl}/${locale}/products/${encodeURIComponent(
           getProductSlug(product, locale)
         )}`,
         lastModified: product.updated_at ? new Date(product.updated_at) : new Date(),
-        images: product.thumbnail ? [product.thumbnail] : [],
+        images: [toAbsoluteUrl(baseUrl, product.thumbnail)].filter(Boolean),
       }))
   )
 
   const blogEntries: MetadataRoute.Sitemap = LOCALES.flatMap((locale) =>
     blogPosts
-      .filter((post) => !!post.handle && !!post.cover_image)
+      .filter(
+        (post) => !!post.handle && !!toAbsoluteUrl(baseUrl, post.cover_image)
+      )
       .map((post) => ({
         url: `${baseUrl}/${locale}/blog/${encodeURIComponent(post.handle)}`,
         lastModified: post.updated_at ? new Date(post.updated_at) : new Date(),
-        images: post.cover_image ? [post.cover_image] : [],
+        images: [toAbsoluteUrl(baseUrl, post.cover_image)].filter(Boolean),
       }))
   )
 

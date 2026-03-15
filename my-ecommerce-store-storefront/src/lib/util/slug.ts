@@ -20,6 +20,19 @@ const getMetadataString = (
   return ""
 }
 
+const getMetadataPathTail = (
+  metadata: Record<string, unknown>,
+  keys: string[]
+) => {
+  const value = getMetadataString(metadata, keys)
+
+  if (!value) {
+    return ""
+  }
+
+  return value.split("/").filter(Boolean).pop() || value
+}
+
 export const toStoreCountryCode = (segment: string) => {
   const normalized = (segment || "").toLowerCase()
   if (normalized === "ar" || normalized === "en" || normalized === "sa") {
@@ -51,6 +64,16 @@ export const slugifyEnglish = (value: string) =>
     .replace(/[^\x00-\x7F]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+
+export const slugifyMixed = (value: string) =>
+  clean(value)
+    .normalize("NFKC")
+    .replace(ARABIC_DIACRITICS, "")
+    .toLowerCase()
+    .replace(/[^\u0600-\u06FFa-z0-9\s-]/g, " ")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -95,6 +118,39 @@ export const getProductSlug = (
 
   const cleanedHandle = stripSkuSuffix(product.handle || "")
   return slugifyEnglish(cleanedHandle)
+}
+
+export const getProductSlugCandidates = (
+  product: Pick<HttpTypes.StoreProduct, "title" | "handle" | "metadata">
+) => {
+  const metadata = (product.metadata as Record<string, unknown> | null) || {}
+
+  const rawCandidates = [
+    getMetadataPathTail(metadata, ["slug_ar", "product_slug_ar", "handle_ar"]),
+    getMetadataPathTail(metadata, [
+      "slug_en",
+      "product_slug_en",
+      "handle_en",
+      "product_slug",
+      "slug",
+    ]),
+    getMetadataPathTail(metadata, ["source_page_link", "source_url"]),
+    product.handle || "",
+    stripSkuSuffix(product.handle || ""),
+    product.title || "",
+    pickLocalizedTitle(product.title || "", "ar"),
+    pickLocalizedTitle(product.title || "", "en"),
+  ].filter(Boolean)
+
+  const slugCandidates = rawCandidates.flatMap((value) => [
+    slugifyMixed(value),
+    slugifyArabic(value),
+    slugifyEnglish(value),
+    stripSkuSuffix(slugifyMixed(value)),
+    stripSkuSuffix(slugifyEnglish(value)),
+  ])
+
+  return Array.from(new Set(slugCandidates.filter(Boolean)))
 }
 
 export const getCategorySlug = (

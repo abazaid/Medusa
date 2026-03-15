@@ -1,6 +1,6 @@
 import { HttpTypes } from "@medusajs/types"
 
-import { getProductSlug, normalizeComparableSlug, stripSkuSuffix } from "@lib/util/slug"
+import { getProductSlugCandidates, normalizeComparableSlug } from "@lib/util/slug"
 
 import { listProducts } from "./products"
 
@@ -42,12 +42,9 @@ const buildIndexForCountry = async (countryCode: string) => {
         continue
       }
 
-      const candidates = [
-        normalizeComparableSlug(getProductSlug(product, "ar")),
-        normalizeComparableSlug(getProductSlug(product, "en")),
-        normalizeComparableSlug(product.handle || ""),
-        normalizeComparableSlug(stripSkuSuffix(product.handle || "")),
-      ].filter(Boolean)
+      const candidates = getProductSlugCandidates(product)
+        .map((candidate) => normalizeComparableSlug(candidate))
+        .filter(Boolean)
 
       for (const candidate of candidates) {
         if (!map.has(candidate)) {
@@ -119,4 +116,3 @@ export const resolveProductIdFromSlugIndex = async ({
   const index = await getCountryIndex(countryCode)
   return index.get(normalized)
 }
-

@@ -17,6 +17,10 @@ const translateError = (error: string) => {
     return "تعذر الاتصال بالخادم حاليًا. حاول مرة أخرى بعد قليل."
   }
 
+  if (normalized.includes("bad gateway")) {
+    return "الخادم غير متاح حاليًا أو حدث خلل مؤقت في الاتصال. حاول مرة أخرى بعد قليل."
+  }
+
   if (normalized.startsWith("error:")) {
     return error.replace(/^error:\s*/i, "حدث خطأ: ")
   }
@@ -24,13 +28,22 @@ const translateError = (error: string) => {
   return error
 }
 
-const ErrorMessage = ({ error, 'data-testid': dataTestid }: { error?: string | null, 'data-testid'?: string }) => {
+const ErrorMessage = ({
+  error,
+  "data-testid": dataTestid,
+}: {
+  error?: string | null
+  "data-testid"?: string
+}) => {
   if (!error) {
     return null
   }
 
   return (
-    <div className="pt-2 text-rose-500 text-small-regular" data-testid={dataTestid}>
+    <div
+      className="pt-2 text-rose-500 text-small-regular"
+      data-testid={dataTestid}
+    >
       <span>{translateError(error)}</span>
     </div>
   )

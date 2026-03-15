@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { notFound, redirect } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 
 import { getCategoryByHandle, listCategories } from "@lib/data/categories"
 import { getBaseURL } from "@lib/util/env"
@@ -147,7 +147,7 @@ export default async function CategoryPage(props: Props) {
     normalizeComparableSlug(params.category.join("/")) !==
     normalizeComparableSlug(canonicalCategorySlug)
   ) {
-    redirect(
+    permanentRedirect(
       `/${params.countryCode}/categories/${encodeURIComponent(canonicalCategorySlug)}`
     )
   }
