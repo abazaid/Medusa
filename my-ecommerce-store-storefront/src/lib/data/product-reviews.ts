@@ -3,6 +3,9 @@
 import { sdk } from "@lib/config"
 import { getAuthHeaders, getCacheOptions } from "./cookies"
 
+const isProductReviewsEnabled =
+  process.env.NEXT_PUBLIC_PRODUCT_REVIEWS_ENABLED === "true"
+
 export type StoreProductReview = {
   id: string
   product_id: string | null
@@ -49,6 +52,10 @@ export const listProductReviewStats = async ({
   productIds: string[]
   disableCache?: boolean
 }) => {
+  if (!isProductReviewsEnabled) {
+    return []
+  }
+
   const uniqueProductIds = Array.from(new Set(productIds.filter(Boolean)))
 
   if (!uniqueProductIds.length) {
@@ -96,6 +103,13 @@ export const listProductReviews = async ({
   limit?: number
   disableCache?: boolean
 }) => {
+  if (!isProductReviewsEnabled) {
+    return {
+      reviews: [] as StoreProductReview[],
+      count: 0,
+    }
+  }
+
   if (!productId) {
     return {
       reviews: [] as StoreProductReview[],
