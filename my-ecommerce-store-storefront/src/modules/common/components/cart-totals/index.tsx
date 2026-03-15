@@ -16,16 +16,32 @@ type CartTotalsProps = {
   locale?: string
 }
 
+const SAUDI_VAT_RATE = 0.15
+
+const roundMoney = (amount: number) => Math.round(amount * 100) / 100
+
 const CartTotals: React.FC<CartTotalsProps> = ({ totals, locale = "ar" }) => {
   const isArabic = locale.toLowerCase() === "ar"
   const {
     currency_code,
     total,
+    subtotal,
     tax_total,
     item_subtotal,
     shipping_subtotal,
     discount_subtotal,
   } = totals
+
+  const inclusiveItemsSubtotal = item_subtotal ?? subtotal ?? 0
+  const resolvedTaxTotal =
+    (tax_total ?? 0) > 0
+      ? tax_total ?? 0
+      : roundMoney(
+          inclusiveItemsSubtotal - inclusiveItemsSubtotal / (1 + SAUDI_VAT_RATE)
+        )
+  const productsSubtotalBeforeTax = roundMoney(
+    Math.max(0, inclusiveItemsSubtotal - resolvedTaxTotal)
+  )
 
   return (
     <div>
@@ -33,16 +49,25 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals, locale = "ar" }) => {
         <div className="flex items-center justify-between">
           <span>
             {isArabic
-              ? "الإجمالي الفرعي (شامل الضريبة وبدون الشحن)"
-              : "Subtotal (incl. tax, excl. shipping)"}
+              ? "قيمة المنتجات قبل الضريبة"
+              : "Products subtotal (excl. tax)"}
           </span>
-          <span data-testid="cart-subtotal" data-value={item_subtotal || 0}>
-            {convertToLocale({ amount: item_subtotal ?? 0, currency_code })}
+          <span
+            data-testid="cart-subtotal"
+            data-value={productsSubtotalBeforeTax}
+          >
+            {convertToLocale({
+              amount: productsSubtotalBeforeTax,
+              currency_code,
+            })}
           </span>
         </div>
         <div className="flex items-center justify-between">
           <span>{isArabic ? "الشحن" : "Shipping"}</span>
-          <span data-testid="cart-shipping" data-value={shipping_subtotal || 0}>
+          <span
+            data-testid="cart-shipping"
+            data-value={shipping_subtotal || 0}
+          >
             {convertToLocale({ amount: shipping_subtotal ?? 0, currency_code })}
           </span>
         </div>
@@ -66,8 +91,11 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals, locale = "ar" }) => {
           <span className="flex gap-x-1 items-center ">
             {isArabic ? "الضريبة" : "Taxes"}
           </span>
-          <span data-testid="cart-taxes" data-value={tax_total || 0}>
-            {convertToLocale({ amount: tax_total ?? 0, currency_code })}
+          <span data-testid="cart-taxes" data-value={resolvedTaxTotal || 0}>
+            {convertToLocale({
+              amount: resolvedTaxTotal ?? 0,
+              currency_code,
+            })}
           </span>
         </div>
       </div>
