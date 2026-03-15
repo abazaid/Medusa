@@ -9,6 +9,7 @@ import ProductActions from "@modules/products/components/product-actions"
 import RelatedProducts from "@modules/products/components/related-products"
 import ProductInfo from "@modules/products/templates/product-info"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
+import { listProductReviews } from "@lib/data/product-reviews"
 
 import ProductActionsWrapper from "./product-actions-wrapper"
 
@@ -86,12 +87,15 @@ const isSaltNicotineProduct = (product: HttpTypes.StoreProduct) => {
   return /(nic\s*salt|salt\s*nicotine|salt\s*e-?liquid|سولت|nicotine salt)/i.test(hint)
 }
 
-const ProductTemplate: React.FC<ProductTemplateProps> = ({
+const renderStars = (rating: number) =>
+  "★".repeat(Math.max(0, Math.min(5, Math.round(rating))))
+
+const ProductTemplate = async ({
   product,
   region,
   countryCode,
   images,
-}) => {
+}: ProductTemplateProps) => {
   if (!product || !product.id) {
     return notFound()
   }
@@ -144,8 +148,12 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
     typeof metadata.rating_value === "number"
       ? metadata.rating_value
       : typeof metadata.rating_value === "string"
-        ? Number(metadata.rating_value) || 4.8
-        : 4.8
+        ? Number(metadata.rating_value) || 0
+        : 0
+  const { reviews } = await listProductReviews({
+    productId: product.id,
+    limit: 8,
+  })
 
   const isSaltProduct = isSaltNicotineProduct(product)
   const showReplacementTab = !isSaltProduct
@@ -258,7 +266,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
                 <div className="mb-1 font-semibold">
                   {ratingValue.toFixed(1)} / 5
                 </div>
-                <div className="text-amber-500">{`*****`}</div>
+                <div className="text-amber-500">{renderStars(ratingValue)}</div>
                 <div className="text-slate-600">
                   {reviewCount > 0
                     ? `${reviewCount} ${isArabic ? "مراجعة" : "reviews"}`
@@ -392,7 +400,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
                     <div className="text-2xl font-bold text-secondary-900">
                       {ratingValue.toFixed(1)} / 5
                     </div>
-                    <div className="mt-1 text-amber-500">{`*****`}</div>
+                    <div className="mt-1 text-amber-500">{renderStars(ratingValue)}</div>
                     <p className="mt-2 text-sm text-slate-600">
                       {reviewCount > 0
                         ? `${reviewCount} ${isArabic ? "مراجعة موثقة" : "verified reviews"}`
@@ -406,6 +414,51 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
                       ? "يمكنك إضافة تقييمك بعد شراء المنتج لتساعد العملاء على اختيار أفضل جهاز مناسب."
                       : "You can leave a review after purchase to help other customers choose the right device."}
                   </div>
+                </div>
+                <div className="mt-5 space-y-4">
+                  {reviews.length ? (
+                    reviews.map((review) => (
+                      <article
+                        key={review.id}
+                        className="rounded-lg border border-slate-200 bg-white p-4"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-secondary-900">
+                              {review.name || (isArabic ? "عميل موثق" : "Verified customer")}
+                            </p>
+                            <div className="mt-1 text-sm text-amber-500">
+                              {renderStars(review.rating)}
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            {review.created_at
+                              ? new Intl.DateTimeFormat(isArabic ? "ar-SA" : "en-US", {
+                                  dateStyle: "medium",
+                                }).format(new Date(review.created_at))
+                              : ""}
+                          </p>
+                        </div>
+                        <p className="mt-3 text-sm leading-7 text-slate-700">
+                          {review.content || (isArabic ? "لا يوجد نص للمراجعة." : "No review text provided.")}
+                        </p>
+                        {review.response?.content ? (
+                          <div className="mt-4 rounded-md border border-sky-100 bg-sky-50 p-3 text-sm text-slate-700">
+                            <p className="font-semibold text-sky-900">
+                              {isArabic ? "رد المتجر" : "Store response"}
+                            </p>
+                            <p className="mt-1 leading-7">{review.response.content}</p>
+                          </div>
+                        ) : null}
+                      </article>
+                    ))
+                  ) : (
+                    <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                      {isArabic
+                        ? "لا توجد مراجعات حقيقية لهذا المنتج حتى الآن. ستظهر هنا التقييمات المعتمدة بعد إضافتها."
+                        : "No approved reviews for this product yet. Approved customer reviews will appear here."}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
- "use client"
+"use client"
 
 import { HttpTypes } from "@medusajs/types"
 import { Container } from "@medusajs/ui"
@@ -37,6 +37,7 @@ const ImageGallery = ({ images, productTitle = "", locale = "ar" }: ImageGallery
             className="absolute inset-0"
             alt={buildProductImageAlt({
               productTitle,
+              image: activeImage,
               context:
                 locale.toLowerCase() === "ar"
                   ? `صورة المنتج ${activeIndex + 1}`
@@ -73,6 +74,7 @@ const ImageGallery = ({ images, productTitle = "", locale = "ar" }: ImageGallery
                   })}
                   alt={buildProductImageAlt({
                     productTitle,
+                    image,
                     context:
                       locale.toLowerCase() === "ar"
                         ? `صورة مصغرة ${index + 1}`

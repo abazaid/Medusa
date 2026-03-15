@@ -14,6 +14,7 @@ const S3_PATHNAME = process.env.MEDUSA_CLOUD_S3_PATHNAME
 const nextConfig = {
   reactStrictMode: true,
   compress: true,
+  poweredByHeader: false,
   logging: {
     fetches: {
       fullUrl: true,
@@ -59,6 +60,19 @@ const nextConfig = {
           ]
         : []),
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ]
   },
 }
 

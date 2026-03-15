@@ -5,6 +5,7 @@ import { Text } from "@medusajs/ui"
 import { getCategorySlug } from "@lib/util/slug"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import StoreLogo from "@modules/layout/components/store-logo"
 
 export default async function Footer() {
   const [locale, { collections }, productCategories] = await Promise.all([
@@ -60,9 +61,9 @@ export default async function Footer() {
           <div>
             <LocalizedClientLink
               href="/"
-              className="text-xl font-bold uppercase tracking-[0.12em] text-white transition-colors hover:text-primary-300"
+              className="block text-white transition-colors hover:text-primary-300"
             >
-              {copy.brand}
+              <StoreLogo className="max-w-[220px]" />
             </LocalizedClientLink>
             <p className="mt-4 text-sm leading-7 text-slate-300">{copy.description}</p>
           </div>

@@ -2,11 +2,11 @@ import { Container, clx } from "@medusajs/ui"
 import Image from "next/image"
 import React from "react"
 
+import { buildProductImageAlt } from "@lib/util/image-alt"
 import PlaceholderImage from "@modules/common/icons/placeholder-image"
 
 type ThumbnailProps = {
   thumbnail?: string | null
-  // TODO: Fix image typings
   images?: any[] | null
   alt?: string
   size?: "small" | "medium" | "large" | "full" | "square"
@@ -25,6 +25,14 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   "data-testid": dataTestid,
 }) => {
   const initialImage = thumbnail || images?.[0]?.url
+  const resolvedAlt =
+    alt ||
+    buildProductImageAlt({
+      productTitle: "",
+      image: images?.[0],
+      context: "product image",
+      locale: "en",
+    })
 
   return (
     <Container
@@ -43,7 +51,7 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
       )}
       data-testid={dataTestid}
     >
-      <ImageOrPlaceholder image={initialImage} size={size} alt={alt} />
+      <ImageOrPlaceholder image={initialImage} size={size} alt={resolvedAlt} />
     </Container>
   )
 }

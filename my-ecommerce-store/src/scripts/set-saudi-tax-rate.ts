@@ -78,7 +78,6 @@ export default async function setSaudiTaxRate({ container }: ExecArgs) {
         code: "VAT15",
         rate: SAUDI_TAX_RATE,
         is_default: true,
-        is_combinable: false,
       },
     ],
   })

@@ -42,6 +42,10 @@ export default function HeroCarousel({
     return null
   }
 
+  const nextIndex = (activeIndex + 1) % slides.length
+  const shouldLoadSlideImage = (index: number) =>
+    index === activeIndex || index === nextIndex
+
   return (
     <section className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
       <div className="relative overflow-hidden rounded-sm border border-slate-300 bg-[#f2f5f8] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
@@ -69,14 +73,15 @@ export default function HeroCarousel({
                 </LocalizedClientLink>
               </div>
               <div className="relative order-1 h-[220px] overflow-hidden rounded-sm bg-gradient-to-br from-white to-slate-100 md:order-2 md:h-[320px]">
-                {slide.image ? (
+                {slide.image && shouldLoadSlideImage(index) ? (
                   <Image
                     src={slide.image}
                     alt={slide.title}
                     fill
                     className="object-contain p-6"
                     sizes="(max-width: 768px) 100vw, 40vw"
-                    priority={index === 0}
+                    priority={index === activeIndex && activeIndex === 0}
+                    loading={index === activeIndex ? "eager" : "lazy"}
                   />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-[#d9e8f5] to-[#f8fbfe]" />

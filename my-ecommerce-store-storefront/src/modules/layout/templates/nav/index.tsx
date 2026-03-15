@@ -8,6 +8,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import CartButton from "@modules/layout/components/cart-button"
 import MobileNavDrawer from "@modules/layout/components/mobile-nav-drawer"
 import NavSearchAutocomplete from "@modules/layout/components/nav-search-autocomplete"
+import StoreLogo from "@modules/layout/components/store-logo"
 
 type NavCategoryLink = {
   id: string
@@ -320,15 +321,10 @@ export default async function Nav() {
           <div className="flex flex-wrap items-center gap-4">
             <LocalizedClientLink
               href="/"
-              className="flex items-end gap-2 text-white"
+              className="flex items-center text-white"
               data-testid="nav-store-link"
             >
-              <span className="text-5xl font-light leading-none tracking-tight">
-                {labels.logoMain}
-              </span>
-              <span className="text-6xl font-extrabold uppercase leading-none text-sky-400">
-                {labels.logoAccent}
-              </span>
+              <StoreLogo />
             </LocalizedClientLink>
 
             <div className="hidden flex-1 text-sm font-bold text-white/90 xl:block">

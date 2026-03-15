@@ -54,6 +54,19 @@ export function generateProductJsonLd(
     getProductSlug(product, countryCode)
   )}`
   const brandName = getProductBrandName(product)
+  const metadata = (product.metadata as Record<string, unknown> | null) || {}
+  const reviewCount =
+    typeof metadata.review_count === "number"
+      ? metadata.review_count
+      : typeof metadata.review_count === "string"
+      ? Number(metadata.review_count) || 0
+      : 0
+  const ratingValue =
+    typeof metadata.rating_value === "number"
+      ? metadata.rating_value
+      : typeof metadata.rating_value === "string"
+      ? Number(metadata.rating_value) || 0
+      : 0
 
   return {
     "@context": "https://schema.org",
@@ -82,6 +95,15 @@ export function generateProductJsonLd(
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
     },
+    ...(reviewCount > 0 && ratingValue > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: ratingValue.toFixed(1),
+            reviewCount,
+          },
+        }
+      : {}),
   }
 }
 

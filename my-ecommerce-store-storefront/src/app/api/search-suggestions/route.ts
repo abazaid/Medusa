@@ -12,6 +12,8 @@ type Suggestion = {
   inventory?: number
 }
 
+const isMeilisearchEnabled = process.env.NEXT_PUBLIC_MEILISEARCH_ENABLED === "true"
+
 const normalizeText = (value?: string | null) =>
   (value || "")
     .toLowerCase()
@@ -96,6 +98,55 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ suggestions: [] })
     }
 
+    let candidates: Suggestion[] = []
+
+    if (isMeilisearchEnabled) {
+      const hitsResponse = await sdk.client.fetch<{
+        hits: Array<{
+          id?: string
+          title?: string
+          handle?: string
+          thumbnail?: string | null
+        }>
+      }>("/store/meilisearch/products-hits", {
+        method: "GET",
+        cache: "no-store",
+        query: {
+          query: q,
+          limit: 10,
+          language: countryCode === "ar" ? "ar" : "en",
+        },
+      })
+
+      candidates = (hitsResponse.hits || []).map((product) => ({
+        id: product.id || "",
+        title: product.title || "",
+        handle: product.handle || "",
+        thumbnail: product.thumbnail || null,
+        inventory: 1,
+      }))
+
+      if (candidates.length >= 3) {
+        const ranked = candidates
+          .map((item) => ({
+            ...item,
+            score: scoreSuggestion(item.title, q, item.inventory || 0),
+          }))
+          .filter((item) => item.score > 0)
+          .sort((left, right) => right.score - left.score)
+
+        const suggestions: Suggestion[] = ranked.slice(0, 5).map((item) => ({
+          id: item.id,
+          title: item.title,
+          handle: item.handle,
+          thumbnail: item.thumbnail,
+          inventory: item.inventory || 0,
+        }))
+
+        return NextResponse.json({ suggestions })
+      }
+    }
+
     const fields = "id,title,handle,thumbnail,*variants.inventory_quantity"
     const productsResponse = await sdk.client.fetch<{
       products: HttpTypes.StoreProduct[]
@@ -110,7 +161,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    let candidates = (productsResponse.products || []).map((product) => ({
+    candidates = (productsResponse.products || []).map((product) => ({
       id: product.id || "",
       title: product.title || "",
       handle: product.handle || "",

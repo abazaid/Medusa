@@ -13,9 +13,9 @@ import PreviewPrice from "./price"
 
 const normalizeOhm = (value: string) =>
   value
-    .replace(/ohm/gi, "Ω")
+    .replace(/ohm/gi, "Ohm")
     .replace(/\s+/g, "")
-    .replace(/(\d)(Ω)/, "$1Ω")
+    .replace(/(\d)(Ohm)/, "$1 Ohm")
 
 const extractVariantSignals = (product: HttpTypes.StoreProduct) => {
   const sourceParts: string[] = []
@@ -24,6 +24,7 @@ const extractVariantSignals = (product: HttpTypes.StoreProduct) => {
     if (variant.title) {
       sourceParts.push(variant.title)
     }
+
     for (const opt of variant.options || []) {
       if (opt.value) {
         sourceParts.push(opt.value)
@@ -69,7 +70,8 @@ export default async function ProductPreview({
   const outOfStockLabel = isArabic ? "غير متوفر" : "Out of stock"
   const quickBuyLabel = isArabic ? "شراء سريع" : "Quick Buy"
   const meta = (product.metadata as Record<string, unknown> | null) || {}
-  const rating = Number(meta.rating_value) || 4.8
+  const rating = Number(meta.rating_value) || 0
+  const reviewCount = Number(meta.review_count) || 0
   const extractedSignals = extractVariantSignals(product)
   const strengthsLabel =
     extractedSignals.length > 0
@@ -85,7 +87,8 @@ export default async function ProductPreview({
 
   const imageAlt = buildProductImageAlt({
     productTitle: product.title || "",
-    context: isArabic ? "منتج فيب" : "vape product",
+    image: product.images?.[0],
+    context: isArabic ? "صورة منتج فيب" : "vape product image",
     locale,
   })
 
@@ -122,10 +125,12 @@ export default async function ProductPreview({
             <h3 className="line-clamp-2 min-h-[40px] text-sm font-bold leading-5 text-[#1f2b44]" data-testid="product-title">
               {product.title}
             </h3>
-            <div className="mt-1 text-xs text-sky-600">
-              {"★★★★★".slice(0, Math.max(1, Math.min(5, Math.round(rating))))}
-              <span className="ms-1 text-slate-500">({rating.toFixed(1)})</span>
-            </div>
+            {reviewCount > 0 ? (
+              <div className="mt-1 text-xs text-sky-600">
+                {"★★★★★".slice(0, Math.max(1, Math.min(5, Math.round(rating))))}
+                <span className="ms-1 text-slate-500">({rating.toFixed(1)})</span>
+              </div>
+            ) : null}
             <div className="mt-2 flex items-center justify-between gap-2">
               <div className="text-base font-extrabold text-[#0f172a]">{cheapestPrice?.calculated_price || ""}</div>
               {strengthsLabel ? (

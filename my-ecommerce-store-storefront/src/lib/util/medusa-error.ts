@@ -8,10 +8,10 @@ export default function medusaError(error: any): never {
     const message = error.response.data.message || error.response.data
     throw new Error(message.charAt(0).toUpperCase() + message.slice(1) + ".")
   } else if (error.request) {
-    throw new Error("No response received from server. Please check if the backend is running.")
+    throw new Error("تعذر الوصول إلى الخادم. يرجى المحاولة مرة أخرى لاحقًا.")
   } else {
     const errorMessage = error.message || error.code || JSON.stringify(error) || "Unknown error"
     console.error("Medusa Error:", error)
-    throw new Error("Error: " + errorMessage)
+    throw new Error("حدث خطأ: " + errorMessage)
   }
 }

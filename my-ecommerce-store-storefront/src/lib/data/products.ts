@@ -2,6 +2,7 @@
 
 import { sdk } from "@lib/config"
 import { getProductBrand } from "@lib/data/brands"
+import { listProductReviewStats } from "@lib/data/product-reviews"
 import { isProductInStock, sortByAvailability } from "@lib/util/product-availability"
 import { sortProducts } from "@lib/util/sort-products"
 import { HttpTypes } from "@medusajs/types"
@@ -122,6 +123,43 @@ const withResolvedInventory = async (
   }))
 }
 
+const withResolvedReviewStats = async (
+  products: HttpTypes.StoreProduct[]
+): Promise<HttpTypes.StoreProduct[]> => {
+  const productIds = products.map((product) => product.id).filter(Boolean)
+  const stats = await listProductReviewStats({ productIds })
+
+  if (!stats.length) {
+    return products
+  }
+
+  const statMap = new Map(stats.map((stat) => [stat.product_id, stat]))
+
+  return products.map((product) => {
+    const stat = statMap.get(product.id)
+
+    if (!stat) {
+      return product
+    }
+
+    const metadata = ((product.metadata as Record<string, unknown> | null) || {})
+
+    return {
+      ...product,
+      metadata: {
+        ...metadata,
+        review_count: stat.review_count,
+        rating_value: stat.average_rating ?? metadata.rating_value ?? null,
+        rating_count_1: stat.rating_count_1,
+        rating_count_2: stat.rating_count_2,
+        rating_count_3: stat.rating_count_3,
+        rating_count_4: stat.rating_count_4,
+        rating_count_5: stat.rating_count_5,
+      },
+    }
+  })
+}
+
 export type ProductFilters = {
   brand?: string[]
   nicotine?: string[]
@@ -144,6 +182,15 @@ export type ProductFacets = {
   stock: FacetOption[]
   price: FacetOption[]
 }
+
+export type StorefrontProductQueryParams =
+  HttpTypes.FindParams &
+  HttpTypes.StoreProductListParams & {
+    q?: string
+    id?: string | string[]
+    category_id?: string | string[]
+    collection_id?: string | string[]
+  }
 
 const splitCsv = (value?: string | null) =>
   (value || "")
@@ -234,6 +281,8 @@ const getPriceBucket = (price: number) => {
   return "200_plus"
 }
 
+const isMeilisearchEnabled = process.env.NEXT_PUBLIC_MEILISEARCH_ENABLED === "true"
+
 const productMatchesFilters = (product: HttpTypes.StoreProduct, filters?: ProductFilters) => {
   if (!filters) {
     return true
@@ -274,7 +323,7 @@ const listAllProducts = async ({
   queryParams,
 }: {
   countryCode: string
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
+  queryParams?: StorefrontProductQueryParams
 }) => {
   const all = new Map<string, HttpTypes.StoreProduct>()
   let pageParam = 1
@@ -324,7 +373,7 @@ export const getProductFacets = async ({
   queryParams,
 }: {
   countryCode: string
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
+  queryParams?: StorefrontProductQueryParams
 }): Promise<ProductFacets> => {
   const products = await listAllProducts({ countryCode, queryParams })
 
@@ -353,14 +402,14 @@ export const listProducts = async ({
   disableCache = false,
 }: {
   pageParam?: number
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductListParams
+  queryParams?: StorefrontProductQueryParams
   countryCode?: string
   regionId?: string
   disableCache?: boolean
 }): Promise<{
   response: { products: HttpTypes.StoreProduct[]; count: number }
   nextPage: number | null
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductListParams
+  queryParams?: StorefrontProductQueryParams
 }> => {
   if (!countryCode && !regionId) {
     throw new Error("Country code or region ID is required")
@@ -395,9 +444,24 @@ export const listProducts = async ({
         ...(await getCacheOptions("products")),
       }
 
+  const searchQuery = (queryParams?.q || "").trim()
+  const hasScopedFilters =
+    Boolean(queryParams?.category_id) ||
+    Boolean(queryParams?.collection_id) ||
+    Boolean(queryParams?.id)
+  const shouldUseMeilisearch =
+    isMeilisearchEnabled && Boolean(searchQuery) && !hasScopedFilters
+  const { q, ...restQueryParams } = queryParams || {}
+  const locale =
+    process.env.NEXT_PUBLIC_DEFAULT_LOCALE ||
+    (countryCode?.toLowerCase() === "ar" ? "ar" : "en")
+  const endpoint = shouldUseMeilisearch
+    ? "/store/meilisearch/products"
+    : "/store/products"
+
   return sdk.client
     .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
-      `/store/products`,
+      endpoint,
       {
         method: "GET",
         query: {
@@ -406,7 +470,13 @@ export const listProducts = async ({
           region_id: region?.id,
           fields:
             "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,*variants.images,*categories,+metadata,+tags,",
-          ...queryParams,
+          ...(shouldUseMeilisearch
+            ? {
+                ...restQueryParams,
+                query: searchQuery,
+                language: locale,
+              }
+            : queryParams),
         },
         headers,
         next,
@@ -415,11 +485,13 @@ export const listProducts = async ({
     )
     .then(async ({ products, count }) => {
       const inventoryResolvedProducts = await withResolvedInventory(products || [])
+      const reviewResolvedProducts =
+        await withResolvedReviewStats(inventoryResolvedProducts)
       const nextPage = count > offset + limit ? pageParam + 1 : null
 
       return {
         response: {
-          products: inventoryResolvedProducts,
+          products: reviewResolvedProducts,
           count,
         },
         nextPage: nextPage,
@@ -440,14 +512,14 @@ export const listProductsWithSort = async ({
   countryCode,
 }: {
   page?: number
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
+  queryParams?: StorefrontProductQueryParams
   sortBy?: SortOptions
   filters?: ProductFilters
   countryCode: string
 }): Promise<{
   response: { products: HttpTypes.StoreProduct[]; count: number }
   nextPage: number | null
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
+  queryParams?: StorefrontProductQueryParams
 }> => {
   const limit = queryParams?.limit || 12
   const products = await listAllProducts({ countryCode, queryParams })

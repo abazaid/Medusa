@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { XMark } from "@medusajs/icons"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import StoreLogo from "@modules/layout/components/store-logo"
 
 type MobileCategory = {
   id: string
@@ -52,11 +53,8 @@ export default function MobileNavDrawer({
     <div className="lg:hidden">
       <div className="border-b border-slate-700 bg-gradient-to-r from-[#12233d] to-[#1f2f4d] px-4 py-3 text-white">
         <div className="flex items-center justify-between gap-3">
-          <LocalizedClientLink href="/" className="flex items-end gap-2">
-            <span className="text-3xl font-light leading-none">{logoMain}</span>
-            <span className="text-4xl font-extrabold uppercase leading-none text-sky-400">
-              {logoAccent}
-            </span>
+          <LocalizedClientLink href="/" className="flex items-center text-white">
+            <StoreLogo priority="mobile" />
           </LocalizedClientLink>
 
           <div className="flex items-center gap-2 text-sm font-bold">
@@ -102,11 +100,8 @@ export default function MobileNavDrawer({
             className="absolute right-0 top-0 h-full w-[86%] max-w-[360px] overflow-y-auto border-l border-slate-700 bg-[#0f1f37] text-white shadow-2xl"
           >
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-[#12233d] px-4 py-4">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-light leading-none">{logoMain}</span>
-                <span className="text-3xl font-extrabold uppercase leading-none text-sky-400">
-                  {logoAccent}
-                </span>
+              <div className="flex items-center text-white">
+                <StoreLogo priority="mobile" />
               </div>
               <button
                 type="button"

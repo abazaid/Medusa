@@ -26,10 +26,10 @@ export default function CheckoutLayout({
           >
             <ChevronDown className="rotate-90" size={16} />
             <span className="mt-px hidden small:block txt-compact-plus text-ui-fg-subtle hover:text-ui-fg-base ">
-              Back to shopping cart
+              العودة إلى سلة التسوق
             </span>
             <span className="mt-px block small:hidden txt-compact-plus text-ui-fg-subtle hover:text-ui-fg-base">
-              Back
+              رجوع
             </span>
           </LocalizedClientLink>
           <LocalizedClientLink
@@ -37,7 +37,7 @@ export default function CheckoutLayout({
             className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
             data-testid="store-link"
           >
-            Vape Hub KSA
+            فيب هب السعودية
           </LocalizedClientLink>
           <div className="flex-1 basis-0" />
         </nav>

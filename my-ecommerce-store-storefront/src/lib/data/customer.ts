@@ -127,6 +127,57 @@ export async function login(_currentState: unknown, formData: FormData) {
   }
 }
 
+export async function requestPasswordReset(
+  _currentState: unknown,
+  formData: FormData
+) {
+  const email = formData.get("email") as string
+  const countryCode = (formData.get("country_code") as string) || "ar"
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "https://vapehubksa.com"
+
+  try {
+    await sdk.auth.resetPassword("customer", "emailpass", {
+      identifier: email,
+      metadata: {
+        reset_url: `${baseUrl}/${countryCode}/account/reset-password`,
+      },
+    })
+
+    return "تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني."
+  } catch (error: any) {
+    return error.toString()
+  }
+}
+
+export async function resetCustomerPassword(
+  _currentState: unknown,
+  formData: FormData
+) {
+  const token = formData.get("token") as string
+  const password = formData.get("password") as string
+  const countryCode = (formData.get("country_code") as string) || "ar"
+
+  if (!token) {
+    return "رابط إعادة تعيين كلمة المرور غير صالح."
+  }
+
+  try {
+    await sdk.auth.updateProvider(
+      "customer",
+      "emailpass",
+      {
+        password,
+      },
+      token
+    )
+  } catch (error: any) {
+    return error.toString()
+  }
+
+  redirect(`/${countryCode}/account`)
+}
+
 export async function signout(countryCode: string) {
   await sdk.auth.logout()
 
