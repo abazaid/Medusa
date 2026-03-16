@@ -7,9 +7,8 @@ import {
   getSeoLandingSlug,
   seoLandings,
 } from "@lib/data/seo-landings"
-import { listProducts } from "@lib/data/products"
+import { listProductsWithSort } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
-import { sortByAvailability } from "@lib/util/product-availability"
 import { getProductSlug } from "@lib/util/slug"
 import { generateBreadcrumbJsonLd } from "@lib/util/structured-data"
 import Breadcrumbs from "@modules/common/components/breadcrumbs"
@@ -78,14 +77,15 @@ export default async function LandingDetailPage(props: PageProps) {
 
   const {
     response: { products },
-  } = await listProducts({
+  } = await listProductsWithSort({
     countryCode: params.countryCode,
+    page: 1,
     queryParams: {
       q: isArabic ? landing.keywordAr : landing.keywordEn,
       limit: 12,
     },
   })
-  const sortedProducts = sortByAvailability(products || [])
+  const sortedProducts = products || []
 
   const breadcrumbSchema = generateBreadcrumbJsonLd([
     { name: isArabic ? "الرئيسية" : "Home", url: `${getBaseURL()}/${params.countryCode}` },

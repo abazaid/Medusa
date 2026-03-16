@@ -2,10 +2,9 @@ import { Metadata } from "next"
 
 import { listCollections } from "@lib/data/collections"
 import { getLocale } from "@lib/data/locale-actions"
-import { listProducts } from "@lib/data/products"
+import { listProductsWithSort } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { getBaseURL } from "@lib/util/env"
-import { sortByAvailability } from "@lib/util/product-availability"
 import { generateOrganizationJsonLd } from "@lib/util/structured-data"
 import StorefrontHome from "@modules/home/templates/storefront-home"
 
@@ -58,16 +57,15 @@ export default async function Home(props: {
 
   const {
     response: { products },
-  } = await listProducts({
+  } = await listProductsWithSort({
     countryCode,
+    page: 1,
     queryParams: {
       limit: 24,
       fields:
         "id,title,handle,thumbnail,*images,*categories,*variants,*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+metadata,+tags",
     },
   })
-
-  const sortedProducts = sortByAvailability(products || [])
 
   if (!region) {
     return null
@@ -101,7 +99,7 @@ export default async function Home(props: {
       <StorefrontHome
         collections={collections || []}
         locale={locale}
-        products={sortedProducts}
+        products={products || []}
         region={region}
       />
     </>

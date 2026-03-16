@@ -1,4 +1,5 @@
 import { listProducts } from "@lib/data/products"
+import { isProductInStock, sortByAvailability } from "@lib/util/product-availability"
 import type { HttpTypes } from "@medusajs/types"
 
 export type Brand = {
@@ -101,13 +102,40 @@ export const getProductBrand = (
 ) => {
   const metadata = (product.metadata as Record<string, unknown> | null) || {}
 
-  return (
-    (typeof metadata.brand_handle === "string" &&
-      (getBrandByHandle(metadata.brand_handle) || resolveBrand(metadata.brand_handle))) ||
-    (typeof metadata.brand_name_ar === "string" && resolveBrand(metadata.brand_name_ar)) ||
-    (typeof metadata.brand_name_en === "string" && resolveBrand(metadata.brand_name_en)) ||
-    (typeof metadata.source_brand === "string" && resolveBrand(metadata.source_brand))
-  )
+  if (typeof metadata.brand_handle === "string") {
+    const brand =
+      getBrandByHandle(metadata.brand_handle) || resolveBrand(metadata.brand_handle)
+
+    if (brand) {
+      return brand
+    }
+  }
+
+  if (typeof metadata.brand_name_ar === "string") {
+    const brand = resolveBrand(metadata.brand_name_ar)
+
+    if (brand) {
+      return brand
+    }
+  }
+
+  if (typeof metadata.brand_name_en === "string") {
+    const brand = resolveBrand(metadata.brand_name_en)
+
+    if (brand) {
+      return brand
+    }
+  }
+
+  if (typeof metadata.source_brand === "string") {
+    const brand = resolveBrand(metadata.source_brand)
+
+    if (brand) {
+      return brand
+    }
+  }
+
+  return undefined
 }
 
 const PRODUCT_BRAND_FIELDS =
@@ -125,7 +153,7 @@ export const listBrandProductPage = async ({
   offset: number
 }) => {
   const normalizedHandle = handle.trim().toLowerCase()
-  const matches: string[] = []
+  const matches: HttpTypes.StoreProduct[] = []
   let pageParam = 1
 
   while (true) {
@@ -148,10 +176,9 @@ export const listBrandProductPage = async ({
       break
     }
 
-    const pageMatches = (response.products || [])
-      .filter((product) => getProductBrand(product)?.handle === normalizedHandle)
-      .map((product) => product.id)
-      .filter(Boolean)
+    const pageMatches = (response.products || []).filter(
+      (product) => getProductBrand(product)?.handle === normalizedHandle
+    )
 
     matches.push(...pageMatches)
 
@@ -166,11 +193,27 @@ export const listBrandProductPage = async ({
     }
   }
 
+  const sortedMatches = sortByAvailability(matches).sort((a, b) => {
+    const availabilityDiff =
+      Number(isProductInStock(b)) - Number(isProductInStock(a))
+
+    if (availabilityDiff !== 0) {
+      return availabilityDiff
+    }
+
+    return (
+      new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime()
+    )
+  })
+
   return {
     brand_handle: normalizedHandle,
-    count: matches.length,
+    count: sortedMatches.length,
     limit,
     offset,
-    product_ids: matches.slice(offset, offset + limit),
+    product_ids: sortedMatches
+      .slice(offset, offset + limit)
+      .map((product) => product.id)
+      .filter(Boolean),
   }
 }

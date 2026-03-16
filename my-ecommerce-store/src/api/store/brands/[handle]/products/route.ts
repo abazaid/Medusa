@@ -3,6 +3,8 @@ import { Pool } from "pg"
 
 type BrandProductsRow = {
   id: string
+  in_stock: boolean
+  created_at: string | null
 }
 
 type CountRow = {
@@ -56,7 +58,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const countQuery = await db.query<CountRow>(
     `
       SELECT COUNT(*)::text AS count
-      FROM product
+      FROM product p
       WHERE deleted_at IS NULL
         AND metadata IS NOT NULL
         AND LOWER(COALESCE(metadata->>'brand_handle', '')) = $1
@@ -79,12 +81,25 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
   const idsQuery = await db.query<BrandProductsRow>(
     `
-      SELECT id
-      FROM product
-      WHERE deleted_at IS NULL
-        AND metadata IS NOT NULL
-        AND LOWER(COALESCE(metadata->>'brand_handle', '')) = $1
-      ORDER BY created_at DESC, id DESC
+      SELECT
+        p.id,
+        EXISTS (
+          SELECT 1
+          FROM product_variant pv
+          WHERE pv.product_id = p.id
+            AND pv.deleted_at IS NULL
+            AND (
+              COALESCE(pv.manage_inventory, false) = false
+              OR COALESCE(pv.allow_backorder, false) = true
+              OR COALESCE(pv.inventory_quantity, 0) > 0
+            )
+        ) AS in_stock,
+        p.created_at
+      FROM product p
+      WHERE p.deleted_at IS NULL
+        AND p.metadata IS NOT NULL
+        AND LOWER(COALESCE(p.metadata->>'brand_handle', '')) = $1
+      ORDER BY in_stock DESC, p.created_at DESC, p.id DESC
       LIMIT $2
       OFFSET $3
     `,

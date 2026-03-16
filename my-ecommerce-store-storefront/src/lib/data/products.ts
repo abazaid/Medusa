@@ -544,26 +544,6 @@ export const listProductsWithSort = async ({
   queryParams?: StorefrontProductQueryParams
 }> => {
   const limit = queryParams?.limit || 12
-  const canUseDirectPagination =
-    sortBy === "created_at" && !hasActiveFilters(filters)
-
-  if (canUseDirectPagination) {
-    const { response, nextPage } = await listProducts({
-      pageParam: Math.max(page, 1),
-      queryParams,
-      countryCode,
-    })
-
-    return {
-      response: {
-        products: sortByAvailability(response.products || []),
-        count: response.count,
-      },
-      nextPage,
-      queryParams,
-    }
-  }
-
   const products = await listAllProducts({
     countryCode,
     queryParams,

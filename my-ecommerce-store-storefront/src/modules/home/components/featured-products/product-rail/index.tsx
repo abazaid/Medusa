@@ -1,5 +1,4 @@
-import { listProducts } from "@lib/data/products"
-import { sortByAvailability } from "@lib/util/product-availability"
+import { listProductsWithSort } from "@lib/data/products"
 import { HttpTypes } from "@medusajs/types"
 import { Text } from "@medusajs/ui"
 
@@ -14,17 +13,16 @@ export default async function ProductRail({
   region: HttpTypes.StoreRegion
 }) {
   const {
-    response: { products: pricedProducts },
-  } = await listProducts({
-    regionId: region.id,
+    response: { products: sortedProducts },
+  } = await listProductsWithSort({
+    countryCode: region.countries?.[0]?.iso_2 || "ar",
+    page: 1,
     queryParams: {
-      collection_id: collection.id,
+      collection_id: [collection.id],
       fields: "*variants.calculated_price",
       limit: 8,
     },
   })
-
-  const sortedProducts = sortByAvailability(pricedProducts || [])
 
   if (!sortedProducts.length) {
     return null
