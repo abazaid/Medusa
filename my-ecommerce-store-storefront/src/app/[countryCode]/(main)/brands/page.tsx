@@ -1,7 +1,6 @@
 import { Metadata } from "next"
 
 import { brands } from "@lib/data/brands"
-import { getLocale } from "@lib/data/locale-actions"
 import { getBaseURL } from "@lib/util/env"
 import BrandsArchive from "@modules/brands/templates/brands-archive"
 
@@ -40,7 +39,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function BrandsPage(props: PageProps) {
   const params = await props.params
-  const locale = await getLocale()
+  const locale = params.countryCode
   const isArabic = locale.toLowerCase() === "ar"
   const title = isArabic
     ? "أرشيف الماركات التجارية"

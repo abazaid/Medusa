@@ -129,14 +129,24 @@ export const listBrandProductPage = async ({
   let pageParam = 1
 
   while (true) {
-    const { response, nextPage } = await listProducts({
-      pageParam,
-      countryCode,
-      queryParams: {
-        limit: 100,
-        fields: PRODUCT_BRAND_FIELDS,
-      },
-    })
+    let response: { products: HttpTypes.StoreProduct[]; count: number }
+    let nextPage: number | null
+
+    try {
+      const result = await listProducts({
+        pageParam,
+        countryCode,
+        queryParams: {
+          limit: 100,
+          fields: PRODUCT_BRAND_FIELDS,
+        },
+      })
+
+      response = result.response
+      nextPage = result.nextPage
+    } catch {
+      break
+    }
 
     const pageMatches = (response.products || [])
       .filter((product) => getProductBrand(product)?.handle === normalizedHandle)

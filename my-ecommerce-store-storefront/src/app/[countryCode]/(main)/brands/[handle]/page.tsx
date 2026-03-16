@@ -4,7 +4,6 @@ import { notFound } from "next/navigation"
 import type { HttpTypes } from "@medusajs/types"
 
 import { brands, getBrandByHandle, listBrandProductPage } from "@lib/data/brands"
-import { getLocale } from "@lib/data/locale-actions"
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { getBaseURL } from "@lib/util/env"
@@ -21,6 +20,7 @@ type PageProps = {
 }
 
 export const revalidate = 300
+export const dynamic = "force-dynamic"
 
 export async function generateStaticParams() {
   return brands.map((brand) => ({
@@ -78,8 +78,7 @@ export default async function BrandPage(props: PageProps) {
     Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1
   const requestedOffset = (currentPage - 1) * pageSize
 
-  const [locale, region, requestedBrandPage] = await Promise.all([
-    getLocale(),
+  const [region, requestedBrandPage] = await Promise.all([
     getRegion(params.countryCode),
     listBrandProductPage({
       countryCode: params.countryCode,
@@ -116,8 +115,11 @@ export default async function BrandPage(props: PageProps) {
           id: pagedIds,
           limit: pagedIds.length,
         },
-      })
-    : { response: { products: [] as HttpTypes.StoreProduct[] } }
+      }).catch(() => ({
+        response: { products: [] as HttpTypes.StoreProduct[], count: 0 },
+        nextPage: null,
+      }))
+    : { response: { products: [] as HttpTypes.StoreProduct[], count: 0 }, nextPage: null }
 
   const productsById = new Map(
     (productsResponse.response.products || []).map((product) => [product.id, product] as const)
@@ -126,7 +128,7 @@ export default async function BrandPage(props: PageProps) {
     .map((id) => productsById.get(id))
     .filter((product): product is HttpTypes.StoreProduct => Boolean(product))
 
-  const isArabic = locale.toLowerCase() === "ar"
+  const isArabic = params.countryCode.toLowerCase() === "ar"
   const brandName = isArabic ? brand.nameAr : brand.nameEn
   const pageTitle = isArabic ? `تسوق ماركة ${brand.nameAr}` : `Shop ${brand.nameEn}`
   const description = isArabic
@@ -226,7 +228,11 @@ export default async function BrandPage(props: PageProps) {
               <ul className="mt-8 grid grid-cols-2 gap-6 small:grid-cols-3 medium:grid-cols-4">
                 {orderedProducts.map((product) => (
                   <li key={product.id}>
-                    <ProductPreview product={product} region={region} />
+                    <ProductPreview
+                      product={product}
+                      region={region}
+                      locale={params.countryCode}
+                    />
                   </li>
                 ))}
               </ul>

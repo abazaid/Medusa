@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "عرض وإدارة عناوين الشحن الخاصة بك.",
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function AddressesPage(props: {
   params: Promise<{ countryCode: string }>
 }) {

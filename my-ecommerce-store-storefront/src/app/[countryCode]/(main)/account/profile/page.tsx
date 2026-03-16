@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "عرض وتعديل بيانات حسابك.",
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function ProfilePage(props: {
   params: Promise<{ countryCode: string }>
 }) {

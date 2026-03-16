@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "إدارة حسابك وطلباتك في المتجر.",
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function AccountPage() {
   const customer = await retrieveCustomer().catch(() => null)
 

@@ -53,19 +53,21 @@ export default async function ProductPreview({
   product,
   isFeatured,
   region,
+  locale,
   cardVariant = "category",
   showQuickAdd = true,
 }: {
   product: HttpTypes.StoreProduct
   isFeatured?: boolean
   region: HttpTypes.StoreRegion
+  locale?: string
   cardVariant?: "default" | "category"
   showQuickAdd?: boolean
 }) {
   const { cheapestPrice } = getProductPrice({ product })
-  const locale = await getLocale()
-  const isArabic = locale.toLowerCase() === "ar"
-  const productSlug = getProductSlug(product, locale)
+  const resolvedLocale = locale || (await getLocale())
+  const isArabic = resolvedLocale.toLowerCase() === "ar"
+  const productSlug = getProductSlug(product, resolvedLocale)
   const inStock = isProductInStock(product)
   const outOfStockLabel = isArabic ? "غير متوفر" : "Out of stock"
   const quickBuyLabel = isArabic ? "شراء سريع" : "Quick Buy"
@@ -89,7 +91,7 @@ export default async function ProductPreview({
     productTitle: product.title || "",
     image: product.images?.[0],
     context: isArabic ? "صورة منتج فيب" : "vape product image",
-    locale,
+    locale: resolvedLocale,
   })
 
   const imageUrl = product.thumbnail || product.images?.[0]?.url || ""

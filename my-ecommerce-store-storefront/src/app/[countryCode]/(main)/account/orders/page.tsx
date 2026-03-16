@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: "عرض طلباتك السابقة وحالتها.",
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function OrdersPage(props: {
   params: Promise<{ countryCode: string }>
 }) {

@@ -39,15 +39,25 @@ const listProductsWithImages = async () => {
   let page = 1
 
   while (true) {
-    const { response, nextPage } = await listProducts({
-      countryCode: STORE_COUNTRY_CODE,
-      pageParam: page,
-      disableCache: true,
-      queryParams: {
-        limit: 100,
-        fields: "handle,title,metadata,thumbnail,updated_at",
-      },
-    })
+    let response: { products: any[]; count: number }
+    let nextPage: number | null
+
+    try {
+      const result = await listProducts({
+        countryCode: STORE_COUNTRY_CODE,
+        pageParam: page,
+        disableCache: true,
+        queryParams: {
+          limit: 100,
+          fields: "handle,title,metadata,thumbnail,updated_at",
+        },
+      })
+
+      response = result.response
+      nextPage = result.nextPage
+    } catch {
+      break
+    }
 
     products.push(...response.products)
 
