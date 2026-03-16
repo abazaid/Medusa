@@ -17,12 +17,43 @@
   } | null
 }
 
-type SerpResult = {
-  title?: string
-  snippet?: string
-  link?: string
-  position?: number
+type CompetitorKeyword = {
+  keyword: string
+  rank_group: number | null
+  rank_absolute: number | null
+  search_volume: number | null
+  keyword_intent: string | null
+  cpc: number | null
+  competition: number | null
+  impressions: number | null
+  etv: number | null
+}
+
+export type CompetitorProductResult = {
+  rank: number
+  rank_group: number | null
+  rank_absolute: number | null
+  title: string
+  url: string
+  domain: string
+  google_snippet: string
+  breadcrumb: string
+  page_description: string | null
+  keywords: CompetitorKeyword[]
   page_excerpt?: string
+}
+
+export type CompetitorProductInsights = {
+  query: string
+  market: {
+    location_name: string
+    language_name: string
+    device: "mobile"
+    os: "android"
+  }
+  check_url: string
+  datetime: string
+  results: CompetitorProductResult[]
 }
 
 export type SeoFieldTarget = "meta_title" | "meta_description" | "description"
@@ -53,6 +84,10 @@ export const COUNTRY_CODE = "sa"
 export const GOOGLE_LANGUAGE = "ar"
 export const GOOGLE_GEO = "sa"
 export const GOOGLE_DEVICE = "mobile"
+export const DATAFORSEO_LOCATION_NAME = "Saudi Arabia"
+export const DATAFORSEO_LANGUAGE_NAME = "Arabic"
+export const DATAFORSEO_DEVICE = "mobile"
+export const DATAFORSEO_OS = "android"
 export const SERP_TOP_RESULTS = 5
 export const DEFAULT_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini"
 export const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini"
@@ -356,57 +391,388 @@ const fetchCompetitorPageExcerpt = async (url: string) => {
   }
 }
 
-export const fetchTopSaudiSearchResults = async (query: string) => {
-  const serpApiKey = process.env.SERPAPI_KEY
+const getDataForSeoCredentials = () => {
+  const login =
+    normalizeText(process.env.DATAFORSEO_LOGIN) ||
+    normalizeText(process.env.DATAFORSEO_EMAIL)
+  const password = normalizeText(process.env.DATAFORSEO_PASSWORD)
 
-  if (!serpApiKey) {
-    throw new Error("SERPAPI_KEY is required to fetch Google Saudi results.")
+  if (!login || !password) {
+    throw new Error(
+      "DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD are required to fetch competitor insights."
+    )
   }
 
-  const searchUrl = new URL("https://serpapi.com/search.json")
-  searchUrl.searchParams.set("engine", "google")
-  searchUrl.searchParams.set("q", query)
-  searchUrl.searchParams.set("gl", GOOGLE_GEO)
-  searchUrl.searchParams.set("hl", GOOGLE_LANGUAGE)
-  searchUrl.searchParams.set("device", GOOGLE_DEVICE)
-  searchUrl.searchParams.set("google_domain", "google.com.sa")
-  searchUrl.searchParams.set("num", String(SERP_TOP_RESULTS))
-  searchUrl.searchParams.set("api_key", serpApiKey)
+  return { login, password }
+}
 
-  const response = await fetch(searchUrl.toString(), {
-    method: "GET",
+const getDataForSeoAuthHeader = () => {
+  const { login, password } = getDataForSeoCredentials()
+  return `Basic ${Buffer.from(`${login}:${password}`).toString("base64")}`
+}
+
+const toNumberOrNull = (value: unknown) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+const toStringOrEmpty = (value: unknown) =>
+  typeof value === "string" ? normalizeText(value) : ""
+
+const toPageDomain = (value: string) => {
+  try {
+    return new URL(value).hostname
+  } catch {
+    return ""
+  }
+}
+
+const dataForSeoPost = async <TResult = Record<string, unknown>>(
+  endpoint: string,
+  tasks: Record<string, unknown>[]
+) => {
+  const response = await fetch(`https://api.dataforseo.com${endpoint}`, {
+    method: "POST",
     headers: {
-      Accept: "application/json",
+      Authorization: getDataForSeoAuthHeader(),
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify(tasks),
   })
 
   if (!response.ok) {
     throw new Error(
-      `SERP API request failed with status ${response.status}: ${await response.text()}`
+      `DataForSEO request failed with status ${response.status}: ${await response.text()}`
     )
   }
 
   const payload = (await response.json()) as {
-    organic_results?: SerpResult[]
+    status_code?: number
+    status_message?: string
+    tasks?: Array<{
+      status_code?: number
+      status_message?: string
+      result?: TResult[]
+      data?: Record<string, unknown>
+    }>
   }
 
-  const topResults = (payload.organic_results || [])
+  if (payload.status_code && payload.status_code !== 20000) {
+    throw new Error(
+      payload.status_message || "DataForSEO returned an unexpected status."
+    )
+  }
+
+  return payload
+}
+
+const normalizeDescriptionText = (value?: string | null) =>
+  normalizeText(value)
+    .replace(
+      /(الشحن|سياسة الإرجاع|تسجيل الدخول|السلة|الكوكيز|cookies)/gi,
+      " "
+    )
+    .replace(/\s+/g, " ")
+    .trim()
+
+const compactDescription = (parts: string[]) => {
+  const seen = new Set<string>()
+  const merged: string[] = []
+
+  for (const part of parts.map((item) => normalizeDescriptionText(item))) {
+    if (!part || part.length < 40 || seen.has(part)) {
+      continue
+    }
+
+    seen.add(part)
+    merged.push(part)
+
+    if (merged.join(" ").length >= 1000 || merged.length >= 3) {
+      break
+    }
+  }
+
+  return truncate(merged.join(" "), 1000) || null
+}
+
+const extractPageDescription = (
+  payload: Record<string, unknown> | undefined,
+  fallbackSnippet: string
+) => {
+  const mainTopic =
+    payload && typeof payload.main_topic === "object"
+      ? (payload.main_topic as Record<string, unknown>)
+      : null
+  const primaryContent = Array.isArray(payload?.primary_content)
+    ? (payload?.primary_content as unknown[])
+    : []
+  const secondaryContent = Array.isArray(payload?.secondary_content)
+    ? (payload?.secondary_content as unknown[])
+    : []
+  const headings = Array.isArray(payload?.headings)
+    ? (payload?.headings as Array<Record<string, unknown>>)
+    : []
+
+  const candidateParts: string[] = []
+
+  const pushValue = (value: unknown) => {
+    if (typeof value === "string") {
+      candidateParts.push(value)
+    }
+  }
+
+  if (mainTopic) {
+    pushValue(mainTopic.primary_content)
+    pushValue(mainTopic.description)
+    pushValue(mainTopic.h_title)
+  }
+
+  for (const item of primaryContent) {
+    if (typeof item === "string") {
+      candidateParts.push(item)
+      continue
+    }
+
+    if (item && typeof item === "object") {
+      const record = item as Record<string, unknown>
+      pushValue(record.text)
+      pushValue(record.content)
+    }
+  }
+
+  if (!candidateParts.length) {
+    for (const heading of headings.slice(0, 3)) {
+      pushValue(heading.h1)
+      pushValue(heading.h2)
+      pushValue(heading.title)
+      pushValue(heading.text)
+    }
+  }
+
+  if (!candidateParts.length) {
+    for (const item of secondaryContent.slice(0, 3)) {
+      if (typeof item === "string") {
+        candidateParts.push(item)
+        continue
+      }
+
+      if (item && typeof item === "object") {
+        const record = item as Record<string, unknown>
+        pushValue(record.text)
+        pushValue(record.content)
+      }
+    }
+  }
+
+  return compactDescription(candidateParts) || normalizeDescriptionText(fallbackSnippet) || null
+}
+
+const mapKeywordItem = (item: Record<string, unknown>): CompetitorKeyword | null => {
+  const keywordData =
+    item.keyword_data && typeof item.keyword_data === "object"
+      ? (item.keyword_data as Record<string, unknown>)
+      : {}
+  const keywordInfo =
+    item.keyword_info && typeof item.keyword_info === "object"
+      ? (item.keyword_info as Record<string, unknown>)
+      : {}
+  const rankedSerpElement =
+    item.ranked_serp_element && typeof item.ranked_serp_element === "object"
+      ? (item.ranked_serp_element as Record<string, unknown>)
+      : {}
+  const serpItem =
+    rankedSerpElement.serp_item && typeof rankedSerpElement.serp_item === "object"
+      ? (rankedSerpElement.serp_item as Record<string, unknown>)
+      : {}
+  const keywordProperties =
+    item.keyword_properties && typeof item.keyword_properties === "object"
+      ? (item.keyword_properties as Record<string, unknown>)
+      : {}
+  const keywordIntent =
+    item.keyword_intent && typeof item.keyword_intent === "object"
+      ? (item.keyword_intent as Record<string, unknown>)
+      : {}
+
+  const keyword =
+    toStringOrEmpty(keywordData.keyword) || toStringOrEmpty(item.keyword)
+
+  if (!keyword) {
+    return null
+  }
+
+  return {
+    keyword,
+    rank_group:
+      toNumberOrNull(serpItem.rank_group) ?? toNumberOrNull(item.rank_group),
+    rank_absolute:
+      toNumberOrNull(serpItem.rank_absolute) ??
+      toNumberOrNull(item.rank_absolute),
+    search_volume:
+      toNumberOrNull(keywordInfo.search_volume) ??
+      toNumberOrNull(item.search_volume),
+    keyword_intent:
+      toStringOrEmpty(keywordIntent.label) || toStringOrEmpty(item.keyword_intent) || null,
+    cpc: toNumberOrNull(keywordInfo.cpc) ?? toNumberOrNull(item.cpc),
+    competition:
+      toNumberOrNull(keywordInfo.competition) ??
+      toNumberOrNull(item.competition) ??
+      toNumberOrNull(keywordProperties.competition),
+    impressions:
+      toNumberOrNull(rankedSerpElement.impressions) ??
+      toNumberOrNull(item.impressions),
+    etv:
+      toNumberOrNull(rankedSerpElement.etv) ?? toNumberOrNull(item.etv),
+  }
+}
+
+const sortKeywords = (keywords: CompetitorKeyword[]) =>
+  keywords.sort((a, b) => {
+    const rankDelta = (a.rank_absolute ?? 999999) - (b.rank_absolute ?? 999999)
+    if (rankDelta !== 0) {
+      return rankDelta
+    }
+
+    return (b.search_volume ?? 0) - (a.search_volume ?? 0)
+  })
+
+export const getCompetitorProductInsights = async (
+  productName: string
+): Promise<CompetitorProductInsights> => {
+  const query = normalizeText(productName)
+
+  if (!query) {
+    throw new Error("A product name is required to fetch competitor insights.")
+  }
+
+  const serpPayload = await dataForSeoPost<{
+    check_url?: string
+    datetime?: string
+    items?: Array<Record<string, unknown>>
+  }>("/v3/serp/google/organic/live/advanced", [
+    {
+      keyword: query,
+      device: DATAFORSEO_DEVICE,
+      os: DATAFORSEO_OS,
+      depth: SERP_TOP_RESULTS,
+      location_name: DATAFORSEO_LOCATION_NAME,
+      language_name: DATAFORSEO_LANGUAGE_NAME,
+    },
+  ])
+
+  const serpResult = serpPayload.tasks?.[0]?.result?.[0]
+  const organicItems = ((serpResult?.items || []) as Array<Record<string, unknown>>)
+    .filter((item) => toStringOrEmpty(item.type) === "organic")
     .slice(0, SERP_TOP_RESULTS)
-    .map((result) => ({
-      title: normalizeText(result.title),
-      snippet: normalizeText(result.snippet),
-      link: normalizeText(result.link),
-      position: result.position,
+
+  if (!organicItems.length) {
+    return {
+      query,
+      market: {
+        location_name: DATAFORSEO_LOCATION_NAME,
+        language_name: DATAFORSEO_LANGUAGE_NAME,
+        device: "mobile",
+        os: "android",
+      },
+      check_url: toStringOrEmpty(serpResult?.check_url),
+      datetime: toStringOrEmpty(serpResult?.datetime),
+      results: [],
+    }
+  }
+
+  const baseResults: CompetitorProductResult[] = organicItems.map((item, index) => {
+    const url = toStringOrEmpty(item.url)
+
+    return {
+      rank: index + 1,
+      rank_group: toNumberOrNull(item.rank_group),
+      rank_absolute: toNumberOrNull(item.rank_absolute),
+      title: toStringOrEmpty(item.title),
+      url,
+      domain: toStringOrEmpty(item.domain) || toPageDomain(url),
+      google_snippet:
+        toStringOrEmpty(item.description) ||
+        toStringOrEmpty(item.snippet) ||
+        toStringOrEmpty(item.pre_snippet),
+      breadcrumb: toStringOrEmpty(item.breadcrumb),
+      page_description: null,
+      keywords: [],
+      page_excerpt: "",
+    }
+  })
+
+  const rankedKeywordsPayload = await dataForSeoPost<{
+    items?: Array<Record<string, unknown>>
+  }>(
+    "/v3/dataforseo_labs/google/ranked_keywords/live",
+    baseResults.map((result) => ({
+      target: result.url,
+      location_name: DATAFORSEO_LOCATION_NAME,
+      language_name: DATAFORSEO_LANGUAGE_NAME,
+      limit: 20,
+      historical_serp_mode: "live",
+      ignore_synonyms: true,
+      item_types: ["organic"],
     }))
-    .filter((result) => result.title || result.snippet)
+  ).catch(() => null)
 
-  const pageExcerpts = await Promise.all(
-    topResults.map((result) => fetchCompetitorPageExcerpt(result.link || ""))
-  )
+  const contentParsingPayload = await dataForSeoPost<{
+    items?: Array<Record<string, unknown>>
+  }>(
+    "/v3/on_page/content_parsing/live",
+    baseResults.map((result) => ({
+      url: result.url,
+    }))
+  ).catch(() => null)
 
-  return topResults.map((result, index) => ({
-    ...result,
-    page_excerpt: pageExcerpts[index] || "",
+  return {
+    query,
+    market: {
+      location_name: DATAFORSEO_LOCATION_NAME,
+      language_name: DATAFORSEO_LANGUAGE_NAME,
+      device: "mobile",
+      os: "android",
+    },
+    check_url: toStringOrEmpty(serpResult?.check_url),
+    datetime: toStringOrEmpty(serpResult?.datetime),
+    results: baseResults.map((result, index) => {
+      const keywordItems =
+        rankedKeywordsPayload?.tasks?.[index]?.result?.[0]?.items || []
+      const parsedContent =
+        contentParsingPayload?.tasks?.[index]?.result?.[0] || undefined
+
+      const keywords = sortKeywords(
+        keywordItems
+          .map((item) => mapKeywordItem(item))
+          .filter((item): item is CompetitorKeyword => Boolean(item))
+      ).slice(0, 10)
+
+      const pageDescription = extractPageDescription(
+        parsedContent as Record<string, unknown> | undefined,
+        result.google_snippet
+      )
+
+      return {
+        ...result,
+        page_description: pageDescription,
+        page_excerpt: pageDescription || result.google_snippet,
+        keywords,
+      }
+    }),
+  }
+}
+
+export const fetchTopSaudiSearchResults = async (query: string) => {
+  const insights = await getCompetitorProductInsights(query)
+
+  return insights.results.map((result) => ({
+    title: result.title,
+    snippet: result.google_snippet,
+    link: result.url,
+    position: result.rank_absolute ?? result.rank,
+    page_excerpt: result.page_description || result.google_snippet,
+    domain: result.domain,
+    breadcrumb: result.breadcrumb,
+    keywords: result.keywords,
   }))
 }
 
@@ -545,7 +911,34 @@ const buildGenerationPrompt = (input: {
         `Title: ${result.title || "N/A"}`,
         `Snippet: ${result.snippet || "N/A"}`,
         `Link: ${result.link || "N/A"}`,
+        `Domain: ${
+          typeof (result as { domain?: string }).domain === "string"
+            ? (result as { domain?: string }).domain
+            : "N/A"
+        }`,
+        `Breadcrumb: ${
+          typeof (result as { breadcrumb?: string }).breadcrumb === "string"
+            ? (result as { breadcrumb?: string }).breadcrumb
+            : "N/A"
+        }`,
         `Page excerpt: ${result.page_excerpt || "N/A"}`,
+        `Ranked keywords: ${
+          Array.isArray((result as { keywords?: unknown[] }).keywords)
+            ? (
+                (result as {
+                  keywords?: Array<{ keyword?: string; search_volume?: number | null }>
+                }).keywords || []
+              )
+                .slice(0, 10)
+                .map(
+                  (keyword) =>
+                    `${keyword.keyword || "N/A"}${
+                      keyword.search_volume ? ` (${keyword.search_volume})` : ""
+                    }`
+                )
+                .join(" | ") || "N/A"
+            : "N/A"
+        }`,
       ].join("\n")
     ),
   ].join("\n")
