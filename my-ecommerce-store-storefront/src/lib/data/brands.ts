@@ -1,4 +1,4 @@
-import { sdk } from "@lib/config"
+import { listProducts } from "@lib/data/products"
 import type { HttpTypes } from "@medusajs/types"
 
 export type Brand = {
@@ -110,30 +110,57 @@ export const getProductBrand = (
   )
 }
 
+const PRODUCT_BRAND_FIELDS =
+  "id,title,handle,created_at,+metadata,*variants.id,*variants.title,*variants.options,*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder"
+
 export const listBrandProductPage = async ({
+  countryCode,
   handle,
   limit,
   offset,
 }: {
+  countryCode: string
   handle: string
   limit: number
   offset: number
 }) => {
-  return sdk.client.fetch<{
-    brand_handle: string
-    count: number
-    limit: number
-    offset: number
-    product_ids: string[]
-  }>(`/store/brands/${encodeURIComponent(handle)}/products`, {
-    query: {
-      limit,
-      offset,
-    },
-    cache: "force-cache",
-    next: {
-      revalidate: 300,
-      tags: [`brand-products-${handle.toLowerCase()}`],
-    },
-  })
+  const normalizedHandle = handle.trim().toLowerCase()
+  const matches: string[] = []
+  let pageParam = 1
+
+  while (true) {
+    const { response, nextPage } = await listProducts({
+      pageParam,
+      countryCode,
+      queryParams: {
+        limit: 100,
+        fields: PRODUCT_BRAND_FIELDS,
+      },
+    })
+
+    const pageMatches = (response.products || [])
+      .filter((product) => getProductBrand(product)?.handle === normalizedHandle)
+      .map((product) => product.id)
+      .filter(Boolean)
+
+    matches.push(...pageMatches)
+
+    if (!nextPage) {
+      break
+    }
+
+    pageParam = nextPage
+
+    if (pageParam > 250) {
+      break
+    }
+  }
+
+  return {
+    brand_handle: normalizedHandle,
+    count: matches.length,
+    limit,
+    offset,
+    product_ids: matches.slice(offset, offset + limit),
+  }
 }

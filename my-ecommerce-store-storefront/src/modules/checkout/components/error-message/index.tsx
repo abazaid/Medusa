@@ -21,6 +21,20 @@ const translateError = (error: string) => {
     return "الخادم غير متاح حاليًا أو حدث خلل مؤقت في الاتصال. حاول مرة أخرى بعد قليل."
   }
 
+  if (
+    normalized.includes("not enough inventory") ||
+    normalized.includes("insufficient inventory") ||
+    normalized.includes("not enough items in stock")
+  ) {
+    const match = error.match(/(\d+)/)
+
+    if (match) {
+      return `الكمية المطلوبة غير متوفرة. المتبقي في المخزون: ${match[1]}.`
+    }
+
+    return "الكمية المطلوبة غير متوفرة في المخزون."
+  }
+
   if (normalized.startsWith("error:")) {
     return error.replace(/^error:\s*/i, "حدث خطأ: ")
   }

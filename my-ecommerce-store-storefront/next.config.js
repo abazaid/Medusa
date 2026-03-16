@@ -61,6 +61,22 @@ const nextConfig = {
         : []),
     ],
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/_next/static/chunks/app/:folder*/@login/:path*",
+          destination: "/_next/static/chunks/app/:folder*/%40login/:path*",
+        },
+        {
+          source: "/_next/static/chunks/app/:folder*/@dashboard/:path*",
+          destination: "/_next/static/chunks/app/:folder*/%40dashboard/:path*",
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    }
+  },
   async headers() {
     return [
       {

@@ -1,13 +1,15 @@
 import { HttpTypes } from "@medusajs/types"
 
-const getVariantInventory = (
+export const getVariantInventory = (
   variant: HttpTypes.StoreProductVariant | undefined
 ) => {
   const qty = variant?.inventory_quantity
   return typeof qty === "number" ? qty : 0
 }
 
-const isVariantPurchasable = (variant: HttpTypes.StoreProductVariant) => {
+export const isVariantPurchasable = (
+  variant: HttpTypes.StoreProductVariant
+) => {
   if (!variant.manage_inventory) {
     return true
   }
@@ -17,6 +19,20 @@ const isVariantPurchasable = (variant: HttpTypes.StoreProductVariant) => {
   }
 
   return getVariantInventory(variant) > 0
+}
+
+export const getVariantMaxPurchasableQuantity = (
+  variant: HttpTypes.StoreProductVariant | undefined
+) => {
+  if (!variant) {
+    return 0
+  }
+
+  if (!variant.manage_inventory || variant.allow_backorder) {
+    return null
+  }
+
+  return Math.max(0, getVariantInventory(variant))
 }
 
 export const isProductInStock = (product: HttpTypes.StoreProduct) => {

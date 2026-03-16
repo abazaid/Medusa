@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { notFound, permanentRedirect } from "next/navigation"
+import { notFound } from "next/navigation"
 
 import { getCategoryByHandle, listCategories } from "@lib/data/categories"
 import { getBaseURL } from "@lib/util/env"
@@ -142,16 +142,6 @@ export default async function CategoryPage(props: Props) {
   if (!productCategory) {
     notFound()
   }
-  const canonicalCategorySlug = getCategorySlug(productCategory, params.countryCode)
-  if (
-    normalizeComparableSlug(params.category.join("/")) !==
-    normalizeComparableSlug(canonicalCategorySlug)
-  ) {
-    permanentRedirect(
-      `/${params.countryCode}/categories/${encodeURIComponent(canonicalCategorySlug)}`
-    )
-  }
-
   const baseUrl = getBaseURL()
   const locale = "ar"
   const labels =

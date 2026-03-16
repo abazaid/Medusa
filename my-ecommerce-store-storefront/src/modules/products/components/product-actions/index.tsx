@@ -2,16 +2,21 @@
 
 import { addToCart } from "@lib/data/cart"
 import { useIntersection } from "@lib/hooks/use-in-view"
+import {
+  getVariantInventory,
+  getVariantMaxPurchasableQuantity,
+} from "@lib/util/product-availability"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
+import ErrorMessage from "@modules/checkout/components/error-message"
 import Divider from "@modules/common/components/divider"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
 import { isEqual } from "lodash"
 import { useParams, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import ProductPrice from "../product-price"
 import MobileActions from "./mobile-actions"
-import { useRouter } from "next/navigation"
 
 type ProductActionsProps = {
   product: HttpTypes.StoreProduct
@@ -39,15 +44,19 @@ export default function ProductActions({
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
   const [quantity, setQuantity] = useState(1)
+  const [error, setError] = useState<string | null>(null)
   const countryCode = useParams().countryCode as string
   const isArabic = countryCode?.toLowerCase() === "ar"
   const metadata = (product.metadata as Record<string, unknown> | null) || {}
   const multibuyLabel =
-    typeof metadata.multibuy_label === "string" ? metadata.multibuy_label.trim() : ""
+    typeof metadata.multibuy_label === "string"
+      ? metadata.multibuy_label.trim()
+      : ""
   const multibuyUrl =
-    typeof metadata.multibuy_url === "string" ? metadata.multibuy_url.trim() : ""
+    typeof metadata.multibuy_url === "string"
+      ? metadata.multibuy_url.trim()
+      : ""
 
-  // If there is only 1 variant, preselect the options
   useEffect(() => {
     if (product.variants?.length === 1) {
       const variantOptions = optionsAsKeymap(product.variants[0].options)
@@ -66,7 +75,6 @@ export default function ProductActions({
     })
   }, [product.variants, options])
 
-  // update the options when a variant is selected
   const setOptionValue = (optionId: string, value: string) => {
     setOptions((prev) => ({
       ...prev,
@@ -74,7 +82,6 @@ export default function ProductActions({
     }))
   }
 
-  //check if the selected options produce a valid variant
   const isValidVariant = useMemo(() => {
     return product.variants?.some((v) => {
       const variantOptions = optionsAsKeymap(v.options)
@@ -97,21 +104,17 @@ export default function ProductActions({
     }
 
     router.replace(pathname + "?" + params.toString(), { scroll: false })
-  }, [selectedVariant, isValidVariant])
+  }, [isValidVariant, pathname, router, searchParams, selectedVariant])
 
-  // check if the selected variant is in stock
   const inStock = useMemo(() => {
-    // If we don't manage inventory, we can always add to cart
     if (selectedVariant && !selectedVariant.manage_inventory) {
       return true
     }
 
-    // If we allow back orders on the variant, we can add to cart
     if (selectedVariant?.allow_backorder) {
       return true
     }
 
-    // If there is inventory available, we can add to cart
     if (
       selectedVariant?.manage_inventory &&
       (selectedVariant?.inventory_quantity || 0) > 0
@@ -119,7 +122,6 @@ export default function ProductActions({
       return true
     }
 
-    // Otherwise, we can't add to cart
     return false
   }, [selectedVariant])
 
@@ -130,6 +132,46 @@ export default function ProductActions({
     return (variant.inventory_quantity || 0) > 0
   }
 
+  const maxPurchasableQuantity = useMemo(
+    () => getVariantMaxPurchasableQuantity(selectedVariant),
+    [selectedVariant]
+  )
+
+  const inventoryMessage = useMemo(() => {
+    if (!selectedVariant) {
+      return null
+    }
+
+    if (!selectedVariant.manage_inventory) {
+      return isArabic ? "متوفر" : "Available"
+    }
+
+    if (selectedVariant.allow_backorder) {
+      return isArabic ? "متاح للطلب" : "Available to order"
+    }
+
+    const inventory = getVariantInventory(selectedVariant)
+
+    if (inventory <= 0) {
+      return isArabic ? "نفد المخزون" : "Out of stock"
+    }
+
+    return isArabic
+      ? `المتبقي في المخزون: ${inventory}`
+      : `${inventory} left in stock`
+  }, [isArabic, selectedVariant])
+
+  useEffect(() => {
+    setError(null)
+
+    if (maxPurchasableQuantity !== null && maxPurchasableQuantity > 0) {
+      setQuantity((prev) => Math.min(prev, maxPurchasableQuantity))
+      return
+    }
+
+    setQuantity(1)
+  }, [maxPurchasableQuantity, selectedVariant?.id])
+
   const getOptionLabel = (optionId: string, optionValue: string) => {
     const variants = product.variants || []
     const matchingVariants = variants.filter((variant) => {
@@ -138,12 +180,15 @@ export default function ProductActions({
         return false
       }
 
-      return Object.entries(options).every(([selectedOptionId, selectedValue]) => {
-        if (!selectedValue || selectedOptionId === optionId) {
-          return true
+      return Object.entries(options).every(
+        ([selectedOptionId, selectedValue]) => {
+          if (!selectedValue || selectedOptionId === optionId) {
+            return true
+          }
+
+          return variantOptions?.[selectedOptionId] === selectedValue
         }
-        return variantOptions?.[selectedOptionId] === selectedValue
-      })
+      )
     })
 
     const hasAvailableVariant = matchingVariants.some((variant) =>
@@ -154,26 +199,46 @@ export default function ProductActions({
       return optionValue
     }
 
-    return isArabic ? `${optionValue} - نفدت الكمية` : `${optionValue} - Out of stock`
+    return isArabic
+      ? `${optionValue} - نفدت الكمية`
+      : `${optionValue} - Out of stock`
   }
 
   const actionsRef = useRef<HTMLDivElement>(null)
-
   const inView = useIntersection(actionsRef, "0px")
 
-  // add the selected variant to the cart
+  const setExceededStockError = () => {
+    setError(
+      isArabic
+        ? `الكمية المطلوبة غير متوفرة. المتبقي في المخزون: ${maxPurchasableQuantity}.`
+        : `Requested quantity is unavailable. Only ${maxPurchasableQuantity} left in stock.`
+    )
+  }
+
   const handleAddToCart = async () => {
-    if (!selectedVariant?.id) return null
+    if (!selectedVariant?.id) {
+      return null
+    }
+
+    if (maxPurchasableQuantity !== null && quantity > maxPurchasableQuantity) {
+      setExceededStockError()
+      return null
+    }
 
     setIsAdding(true)
+    setError(null)
 
     await addToCart({
       variantId: selectedVariant.id,
       quantity,
       countryCode,
     })
-
-    setIsAdding(false)
+      .catch((err) => {
+        setError(err.message)
+      })
+      .finally(() => {
+        setIsAdding(false)
+      })
   }
 
   return (
@@ -223,25 +288,37 @@ export default function ProductActions({
             <button
               type="button"
               className="h-11 w-11 text-lg"
-              aria-label={isArabic ? "ØªÙ‚Ù„ÙŠÙ„ Ø§Ù„ÙƒÙ…ÙŠØ©" : "Decrease quantity"}
+              aria-label={isArabic ? "تقليل الكمية" : "Decrease quantity"}
               onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-              disabled={isAdding || !!disabled}
+              disabled={isAdding || !!disabled || quantity <= 1}
             >
               -
             </button>
             <label htmlFor="product-quantity-input" className="sr-only">
-              {isArabic ? "Ø§Ù„ÙƒÙ…ÙŠØ©" : "Quantity"}
+              {isArabic ? "الكمية" : "Quantity"}
             </label>
             <input
               id="product-quantity-input"
               type="number"
               min={1}
               value={quantity}
-              aria-label={isArabic ? "Ø§Ù„ÙƒÙ…ÙŠØ©" : "Quantity"}
+              aria-label={isArabic ? "الكمية" : "Quantity"}
               onChange={(event) => {
                 const value = Number(event.target.value)
                 if (!Number.isNaN(value) && value > 0) {
-                  setQuantity(Math.floor(value))
+                  const nextQuantity = Math.floor(value)
+
+                  if (
+                    maxPurchasableQuantity !== null &&
+                    nextQuantity > maxPurchasableQuantity
+                  ) {
+                    setQuantity(maxPurchasableQuantity)
+                    setExceededStockError()
+                    return
+                  }
+
+                  setError(null)
+                  setQuantity(nextQuantity)
                 }
               }}
               className="h-11 w-16 border-x border-slate-300 text-center outline-none"
@@ -249,13 +326,31 @@ export default function ProductActions({
             <button
               type="button"
               className="h-11 w-11 text-lg"
-              aria-label={isArabic ? "Ø²ÙŠØ§Ø¯Ø© Ø§Ù„ÙƒÙ…ÙŠØ©" : "Increase quantity"}
-              onClick={() => setQuantity((prev) => prev + 1)}
+              aria-label={isArabic ? "زيادة الكمية" : "Increase quantity"}
+              onClick={() => {
+                if (
+                  maxPurchasableQuantity !== null &&
+                  quantity >= maxPurchasableQuantity
+                ) {
+                  setExceededStockError()
+                  return
+                }
+
+                setError(null)
+                setQuantity((prev) => prev + 1)
+              }}
               disabled={isAdding || !!disabled}
             >
               +
             </button>
           </div>
+          {inventoryMessage && (
+            <div className="mt-2 text-sm text-slate-600">{inventoryMessage}</div>
+          )}
+          <ErrorMessage
+            error={error}
+            data-testid="product-quantity-error-message"
+          />
         </div>
 
         <Button
@@ -273,10 +368,16 @@ export default function ProductActions({
           data-testid="add-product-button"
         >
           {!selectedVariant && !options
-            ? isArabic ? "اختر الخيار" : "Select variant"
+            ? isArabic
+              ? "اختر الخيار"
+              : "Select variant"
             : !inStock || !isValidVariant
-            ? isArabic ? "نفد المخزون" : "Out of stock"
-            : isArabic ? "أضف إلى السلة" : "Add To Basket"}
+              ? isArabic
+                ? "نفد المخزون"
+                : "Out of stock"
+              : isArabic
+                ? "أضف إلى السلة"
+                : "Add To Basket"}
         </Button>
         <MobileActions
           product={product}

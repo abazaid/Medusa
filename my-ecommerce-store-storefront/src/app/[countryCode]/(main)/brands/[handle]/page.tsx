@@ -82,6 +82,7 @@ export default async function BrandPage(props: PageProps) {
     getLocale(),
     getRegion(params.countryCode),
     listBrandProductPage({
+      countryCode: params.countryCode,
       handle: brand.handle,
       limit: pageSize,
       offset: requestedOffset,
@@ -101,6 +102,7 @@ export default async function BrandPage(props: PageProps) {
       ? requestedBrandPage.product_ids
       : (
           await listBrandProductPage({
+            countryCode: params.countryCode,
             handle: brand.handle,
             limit: pageSize,
             offset: safeOffset,
