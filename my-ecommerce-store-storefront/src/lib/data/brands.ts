@@ -1,3 +1,4 @@
+import { sdk } from "@lib/config"
 import type { HttpTypes } from "@medusajs/types"
 
 export type Brand = {
@@ -107,4 +108,32 @@ export const getProductBrand = (
     (typeof metadata.brand_name_en === "string" && resolveBrand(metadata.brand_name_en)) ||
     (typeof metadata.source_brand === "string" && resolveBrand(metadata.source_brand))
   )
+}
+
+export const listBrandProductPage = async ({
+  handle,
+  limit,
+  offset,
+}: {
+  handle: string
+  limit: number
+  offset: number
+}) => {
+  return sdk.client.fetch<{
+    brand_handle: string
+    count: number
+    limit: number
+    offset: number
+    product_ids: string[]
+  }>(`/store/brands/${encodeURIComponent(handle)}/products`, {
+    query: {
+      limit,
+      offset,
+    },
+    cache: "force-cache",
+    next: {
+      revalidate: 300,
+      tags: [`brand-products-${handle.toLowerCase()}`],
+    },
+  })
 }

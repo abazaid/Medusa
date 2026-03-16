@@ -8,6 +8,50 @@ import RefinementList from "@modules/store/components/refinement-list"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
 
+const FiltersSidebarFallback = () => (
+  <aside className="hidden w-full rounded-md border border-slate-300 bg-white p-4 lg:block lg:sticky lg:top-24">
+    <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+    <div className="mt-5 space-y-4">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="space-y-2 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
+          <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
+          <div className="h-3 w-5/6 animate-pulse rounded bg-slate-100" />
+          <div className="h-3 w-4/6 animate-pulse rounded bg-slate-100" />
+        </div>
+      ))}
+    </div>
+  </aside>
+)
+
+const CollectionFiltersSidebar = async ({
+  countryCode,
+  collectionId,
+  sortBy,
+  selected,
+}: {
+  countryCode: string
+  collectionId: string
+  sortBy: SortOptions
+  selected?: ProductFilters
+}) => {
+  const facets = await getProductFacets({
+    countryCode,
+    queryParams: {
+      collection_id: [collectionId],
+    },
+  })
+
+  return (
+    <RefinementList
+      sortBy={sortBy}
+      variant="sidebar"
+      facets={facets}
+      selected={selected}
+    />
+  )
+}
+
 const buildCollectionSeo = (
   collection: HttpTypes.StoreCollection,
   isArabic: boolean
@@ -55,12 +99,6 @@ export default async function CollectionTemplate({
   const sort = sortBy || "created_at"
   const isArabic = countryCode.toLowerCase() === "ar"
   const seo = buildCollectionSeo(collection, isArabic)
-  const facets = await getProductFacets({
-    countryCode,
-    queryParams: {
-      collection_id: [collection.id],
-    },
-  })
 
   return (
     <div className="bg-[#eceff3] py-6">
@@ -83,7 +121,14 @@ export default async function CollectionTemplate({
         </div>
 
         <div className="mt-4 grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <RefinementList sortBy={sort} variant="sidebar" facets={facets} selected={filters} />
+          <Suspense fallback={<FiltersSidebarFallback />}>
+            <CollectionFiltersSidebar
+              sortBy={sort}
+              countryCode={countryCode}
+              collectionId={collection.id}
+              selected={filters}
+            />
+          </Suspense>
           <div>
             <Suspense
               fallback={

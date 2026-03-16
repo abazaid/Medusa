@@ -192,6 +192,12 @@ export type StorefrontProductQueryParams =
     collection_id?: string | string[]
   }
 
+const PRODUCT_CARD_FIELDS =
+  "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,*variants.images,*categories,+metadata,+tags,"
+
+const PRODUCT_INDEX_FIELDS =
+  "id,title,handle,created_at,+metadata,*variants.id,*variants.title,*variants.options,*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder"
+
 const splitCsv = (value?: string | null) =>
   (value || "")
     .split(",")
@@ -321,9 +327,11 @@ const productMatchesFilters = (product: HttpTypes.StoreProduct, filters?: Produc
 const listAllProducts = async ({
   countryCode,
   queryParams,
+  fields = PRODUCT_INDEX_FIELDS,
 }: {
   countryCode: string
   queryParams?: StorefrontProductQueryParams
+  fields?: string
 }) => {
   const all = new Map<string, HttpTypes.StoreProduct>()
   let pageParam = 1
@@ -335,6 +343,7 @@ const listAllProducts = async ({
       queryParams: {
         ...queryParams,
         limit: 100,
+        fields,
       },
     })
 
@@ -375,7 +384,11 @@ export const getProductFacets = async ({
   countryCode: string
   queryParams?: StorefrontProductQueryParams
 }): Promise<ProductFacets> => {
-  const products = await listAllProducts({ countryCode, queryParams })
+  const products = await listAllProducts({
+    countryCode,
+    queryParams,
+    fields: PRODUCT_INDEX_FIELDS,
+  })
 
   const brandValues = products.map((product) => getProductBrandName(product)).filter(Boolean)
   const nicotineValues = products.flatMap((product) => extractNicotineValues(product))
@@ -468,8 +481,7 @@ export const listProducts = async ({
           limit,
           offset,
           region_id: region?.id,
-          fields:
-            "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,*variants.images,*categories,+metadata,+tags,",
+          fields: queryParams?.fields || PRODUCT_CARD_FIELDS,
           ...(shouldUseMeilisearch
             ? {
                 ...restQueryParams,
@@ -500,6 +512,16 @@ export const listProducts = async ({
     })
 }
 
+const hasActiveFilters = (filters?: ProductFilters) =>
+  Boolean(
+    filters?.brand?.length ||
+      filters?.nicotine?.length ||
+      filters?.resistance?.length ||
+      filters?.flavor?.length ||
+      filters?.stock?.length ||
+      filters?.price?.length
+  )
+
 /**
  * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
  * It will then return the paginated products based on the page and limit parameters.
@@ -522,7 +544,31 @@ export const listProductsWithSort = async ({
   queryParams?: StorefrontProductQueryParams
 }> => {
   const limit = queryParams?.limit || 12
-  const products = await listAllProducts({ countryCode, queryParams })
+  const canUseDirectPagination =
+    sortBy === "created_at" && !hasActiveFilters(filters)
+
+  if (canUseDirectPagination) {
+    const { response, nextPage } = await listProducts({
+      pageParam: Math.max(page, 1),
+      queryParams,
+      countryCode,
+    })
+
+    return {
+      response: {
+        products: sortByAvailability(response.products || []),
+        count: response.count,
+      },
+      nextPage,
+      queryParams,
+    }
+  }
+
+  const products = await listAllProducts({
+    countryCode,
+    queryParams,
+    fields: PRODUCT_INDEX_FIELDS,
+  })
   const filteredProducts = products.filter((product) => productMatchesFilters(product, filters))
   const count = filteredProducts.length
   const sortedProducts = sortProducts(filteredProducts, sortBy)
@@ -549,7 +595,30 @@ export const listProductsWithSort = async ({
 
   const nextPage = count > pageParam + limit ? page + 1 : null
 
-  const paginatedProducts = availabilitySortedProducts.slice(pageParam, pageParam + limit)
+  const pageProducts = availabilitySortedProducts.slice(pageParam, pageParam + limit)
+  const pageProductIds = pageProducts.map((product) => product.id).filter(Boolean)
+  let paginatedProducts = pageProducts
+
+  if (pageProductIds.length) {
+    const {
+      response: { products: hydratedProducts },
+    } = await listProducts({
+      pageParam: 1,
+      countryCode,
+      queryParams: {
+        id: pageProductIds,
+        limit: pageProductIds.length,
+      },
+    })
+
+    const hydratedById = new Map(
+      hydratedProducts.map((product) => [product.id, product])
+    )
+
+    paginatedProducts = pageProductIds
+      .map((productId) => hydratedById.get(productId))
+      .filter((product): product is HttpTypes.StoreProduct => Boolean(product))
+  }
 
   return {
     response: {

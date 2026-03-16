@@ -14,6 +14,75 @@ const plugins = [
   },
 ]
 
+const modules: any[] = [
+  {
+    resolve: "./src/modules/blog",
+  },
+]
+
+const redisUrl = process.env.REDIS_URL || process.env.CACHE_REDIS_URL
+
+if (redisUrl) {
+  modules.push(
+    {
+      resolve: "@medusajs/medusa/cache-redis",
+      options: {
+        redisUrl,
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/event-bus-redis",
+      options: {
+        redisUrl,
+        workerOptions: {
+          concurrency: 1,
+        },
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/workflow-engine-redis",
+      options: {
+        redis: {
+          url: redisUrl,
+        },
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/locking",
+      options: {
+        providers: [
+          {
+            id: "locking-redis",
+            resolve: "@medusajs/medusa/locking-redis",
+            is_default: true,
+            options: {
+              redisUrl,
+            },
+          },
+        ],
+      },
+    }
+  )
+}
+
+if (process.env.MEDUSA_ENABLE_CACHING_MODULE === "true" && redisUrl) {
+  modules.push({
+    resolve: "@medusajs/medusa/caching",
+    options: {
+      providers: [
+        {
+          id: "caching-redis",
+          resolve: "@medusajs/medusa/caching-redis",
+          is_default: true,
+          options: {
+            redisUrl,
+          },
+        },
+      ],
+    },
+  })
+}
+
 if (
   process.env.MEILISEARCH_ENABLED === "true" &&
   process.env.MEILISEARCH_HOST
@@ -91,6 +160,12 @@ if (
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    redisUrl: process.env.REDIS_URL,
+    redisPrefix: process.env.REDIS_PREFIX,
+    workerMode:
+      process.env.WORKER_MODE === "server" || process.env.WORKER_MODE === "worker"
+        ? process.env.WORKER_MODE
+        : "shared",
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
@@ -99,10 +174,6 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
   },
-  modules: [
-    {
-      resolve: "./src/modules/blog",
-    },
-  ],
+  modules,
   plugins,
 })

@@ -67,6 +67,50 @@ const buildSeoContent = ({
   }
 }
 
+const FiltersSidebarFallback = () => (
+  <aside className="hidden w-full rounded-md border border-slate-300 bg-white p-4 lg:block lg:sticky lg:top-24">
+    <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+    <div className="mt-5 space-y-4">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="space-y-2 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+          <div className="h-3 w-20 animate-pulse rounded bg-slate-200" />
+          <div className="h-3 w-full animate-pulse rounded bg-slate-100" />
+          <div className="h-3 w-5/6 animate-pulse rounded bg-slate-100" />
+          <div className="h-3 w-4/6 animate-pulse rounded bg-slate-100" />
+        </div>
+      ))}
+    </div>
+  </aside>
+)
+
+const CategoryFiltersSidebar = async ({
+  countryCode,
+  categoryId,
+  sortBy,
+  selected,
+}: {
+  countryCode: string
+  categoryId: string
+  sortBy: SortOptions
+  selected?: ProductFilters
+}) => {
+  const facets = await getProductFacets({
+    countryCode,
+    queryParams: {
+      category_id: [categoryId],
+    },
+  })
+
+  return (
+    <RefinementList
+      sortBy={sortBy}
+      variant="sidebar"
+      facets={facets}
+      selected={selected}
+    />
+  )
+}
+
 export default async function CategoryTemplate({
   category,
   sortBy,
@@ -102,12 +146,6 @@ export default async function CategoryTemplate({
     categoryName: category.name || category.handle || "",
     description: category.description,
     isArabic,
-  })
-  const facets = await getProductFacets({
-    countryCode,
-    queryParams: {
-      category_id: [category.id],
-    },
   })
 
   return (
@@ -161,7 +199,14 @@ export default async function CategoryTemplate({
         </div>
 
         <div className="mt-4 grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <RefinementList sortBy={sort} variant="sidebar" facets={facets} selected={filters} />
+          <Suspense fallback={<FiltersSidebarFallback />}>
+            <CategoryFiltersSidebar
+              sortBy={sort}
+              countryCode={countryCode}
+              categoryId={category.id}
+              selected={filters}
+            />
+          </Suspense>
           <div>
             <Suspense
               fallback={
