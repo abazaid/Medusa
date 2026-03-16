@@ -42,7 +42,9 @@ if (redisUrl) {
     {
       resolve: "@medusajs/medusa/workflow-engine-redis",
       options: {
-        redisUrl,
+        redis: {
+          url: redisUrl,
+        },
       },
     },
     {
