@@ -1,7 +1,7 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { buildWelcomeEmail } from "../lib/email/templates"
 import { sendStoreEmail } from "../lib/email/mailer"
+import { buildWelcomeEmail } from "../lib/email/templates"
 
 type CustomerCreatedEvent = {
   id: string
@@ -28,19 +28,26 @@ export default async function customerCreatedHandler({
     return
   }
 
-  const email = buildWelcomeEmail({
-    email: customer.email,
-    firstName: customer.first_name,
-  })
+  try {
+    const email = buildWelcomeEmail({
+      email: customer.email,
+      firstName: customer.first_name,
+    })
 
-  await sendStoreEmail({
-    to: customer.email,
-    subject: "مرحبًا بك في Vape Hub KSA",
-    html: email.html,
-    text: email.text,
-  })
+    await sendStoreEmail({
+      to: customer.email,
+      subject: "مرحبًا بك في Vape Hub KSA",
+      html: email.html,
+      text: email.text,
+    })
 
-  logger.info(`Sent welcome email to ${customer.email}`)
+    logger.info(`Sent welcome email to ${customer.email}`)
+  } catch (error: any) {
+    logger.error(
+      `Failed to send welcome email to ${customer.email}: ${error?.message || error}`
+    )
+    throw error
+  }
 }
 
 export const config: SubscriberConfig = {

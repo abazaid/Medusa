@@ -11,9 +11,11 @@ export const metadata: Metadata = {
 }
 
 export default async function AccountPageLayout({
+  children,
   dashboard,
   login,
 }: {
+  children?: React.ReactNode
   dashboard?: React.ReactNode
   login?: React.ReactNode
 }) {
@@ -21,7 +23,7 @@ export default async function AccountPageLayout({
 
   return (
     <AccountLayout customer={customer}>
-      {customer ? dashboard : login}
+      {children ?? (customer ? dashboard : login)}
       <Toaster />
     </AccountLayout>
   )

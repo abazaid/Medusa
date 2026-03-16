@@ -1,19 +1,13 @@
-import fs from "fs"
-import os from "os"
-import path from "path"
-import { spawnSync } from "child_process"
-
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import {
   createInventoryLevelsWorkflow,
   updateInventoryLevelsWorkflow,
 } from "@medusajs/medusa/core-flows"
+import { readWorkbookRows, type SheetRow } from "../../lib/xlsx/reader"
 
 type ContainerLike = {
   resolve: (key: string) => any
 }
-
-type SheetRow = Record<string, string>
 
 type QtyImportOptions = {
   container: ContainerLike
@@ -42,75 +36,6 @@ export type QtyImportSummary = {
 const QUERY_BATCH_SIZE = 500
 const WORKFLOW_BATCH_SIZE = 250
 
-const escapePowerShellString = (value: string) => value.replace(/'/g, "''")
-
-const extractWorkbookArchive = (filePath: string, extractDir: string) => {
-  const pythonScript = [
-    "import sys, zipfile",
-    "zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])",
-  ].join("; ")
-
-  for (const command of ["python3", "python"]) {
-    const result = spawnSync(command, ["-c", pythonScript, filePath, extractDir], {
-      stdio: "pipe",
-      encoding: "utf8",
-    })
-
-    if (result.status === 0) {
-      return
-    }
-
-    if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT") {
-      continue
-    }
-  }
-
-  const powerShellResult = spawnSync(
-    "powershell",
-    [
-      "-NoProfile",
-      "-Command",
-      [
-        "Add-Type -AssemblyName System.IO.Compression.FileSystem",
-        `[System.IO.Compression.ZipFile]::ExtractToDirectory('${escapePowerShellString(
-          filePath
-        )}', '${escapePowerShellString(extractDir)}')`,
-      ].join("; "),
-    ],
-    {
-      stdio: "pipe",
-      encoding: "utf8",
-    }
-  )
-
-  if (powerShellResult.status === 0) {
-    return
-  }
-
-  const stderr =
-    powerShellResult.stderr?.trim() ||
-    powerShellResult.error?.message ||
-    "No supported archive extractor was found. Install python3/python or PowerShell."
-
-  throw new Error(stderr)
-}
-
-const decodeXmlEntities = (value: string) =>
-  value
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
-      String.fromCodePoint(parseInt(hex, 16))
-    )
-    .replace(/&#(\d+);/g, (_, decimal) =>
-      String.fromCodePoint(parseInt(decimal, 10))
-    )
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, "&")
-
-const stripXmlTags = (value: string) => value.replace(/<[^>]+>/g, "")
-
 const normalizeText = (value?: string | null) =>
   (value || "").replace(/\s+/g, " ").trim()
 
@@ -135,77 +60,6 @@ const parseInteger = (value?: string | null) => {
     return null
   }
   return Math.max(0, Math.trunc(parsed))
-}
-
-const extractSharedStrings = (xml: string) =>
-  [...xml.matchAll(/<si[\s\S]*?<t[^>]*>([\s\S]*?)<\/t>[\s\S]*?<\/si>/g)].map(
-    (match) => decodeXmlEntities(stripXmlTags(match[1] || ""))
-  )
-
-const extractRows = (xml: string, sharedStrings: string[]) => {
-  const rows: SheetRow[] = []
-  const rowMatches = xml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)
-
-  for (const rowMatch of rowMatches) {
-    const cellsXml = rowMatch[1] || ""
-    const row: SheetRow = {}
-    const cellMatches = cellsXml.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)
-
-    for (const cellMatch of cellMatches) {
-      const attrs = cellMatch[1] || ""
-      const body = cellMatch[2] || ""
-      const refMatch = attrs.match(/\br="([A-Z]+\d+)"/)
-      const typeMatch = attrs.match(/\bt="([^"]+)"/)
-      const ref = refMatch?.[1]
-
-      if (!ref) {
-        continue
-      }
-
-      const reference = ref.replace(/\d+/g, "")
-      const rawValue =
-        body.match(/<v>([\s\S]*?)<\/v>/)?.[1] ||
-        body.match(/<t[^>]*>([\s\S]*?)<\/t>/)?.[1] ||
-        ""
-
-      let value = decodeXmlEntities(stripXmlTags(rawValue))
-
-      if (typeMatch?.[1] === "s") {
-        const index = Number(rawValue)
-        value = Number.isFinite(index) ? sharedStrings[index] || "" : ""
-      }
-
-      row[reference] = value
-    }
-
-    rows.push(row)
-  }
-
-  return rows
-}
-
-const readWorkbookRows = (filePath: string) => {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Import file not found: ${filePath}`)
-  }
-
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "medusa-qty-import-"))
-  const extractDir = path.join(tempDir, "xlsx")
-
-  try {
-    extractWorkbookArchive(filePath, extractDir)
-
-    const sharedStringsPath = path.join(extractDir, "xl", "sharedStrings.xml")
-    const sheetPath = path.join(extractDir, "xl", "worksheets", "sheet1.xml")
-
-    const sharedStrings = fs.existsSync(sharedStringsPath)
-      ? extractSharedStrings(fs.readFileSync(sharedStringsPath, "utf8"))
-      : []
-
-    return extractRows(fs.readFileSync(sheetPath, "utf8"), sharedStrings)
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true })
-  }
 }
 
 const resolveColumnLetter = (headerRow: SheetRow, candidates: string[]) => {
@@ -287,7 +141,7 @@ export const importQtyWorkbook = async ({
 
   logger.info(`Reading quantity import file: ${filePath}`)
 
-  const workbookRows = readWorkbookRows(filePath)
+  const workbookRows = await readWorkbookRows(filePath)
   const qtyRows = buildQtyRows(workbookRows).filter(
     (row) => row.sku || row.quantity !== null
   )
