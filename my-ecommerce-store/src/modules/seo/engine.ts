@@ -217,6 +217,21 @@ const SEARCH_NOISE_TOKENS = [
   "electronic cigarette",
 ]
 
+const ARABIC_QUERY_PREFIXES = [
+  "منتج",
+  "منتج جاهز",
+  "جهاز",
+  "جهاز سحبة",
+  "سحبة",
+  "سحبة جاهزة",
+  "سحبة سيجارة",
+  "سيجارة",
+  "سيجارة الكترونية",
+  "سيجارة إلكترونية",
+  "نكهة",
+  "نكهات",
+]
+
 const CATEGORY_LABEL_MAPPINGS: Array<{ match: string[]; label: string }> = [
   { match: ["disposable", "disposable vape", "سحبة", "سحبات", "vape pen"], label: "سحبة جاهزة" },
   { match: ["pod system", "pods", "pod", "بود", "بودات"], label: "بود" },
@@ -261,6 +276,69 @@ const stripSearchNoise = (value?: string | null) => {
   }
 
   return cleanGenericSeoFillers(next)
+}
+
+const stripArabicQueryPrefixes = (value?: string | null) => {
+  let next = normalizeText(value)
+
+  for (const prefix of ARABIC_QUERY_PREFIXES.sort((left, right) => right.length - left.length)) {
+    const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    next = next.replace(new RegExp(`^${escaped}\\s+`, "i"), "")
+  }
+
+  return normalizeText(next)
+}
+
+const stripTitleMeasurements = (value?: string | null) =>
+  normalizeText(
+    (value || "")
+      .replace(/\b\d+(?:\.\d+)?\s*ml\b/gi, " ")
+      .replace(/\b\d+(?:\.\d+)?\s*mg\b/gi, " ")
+      .replace(/\b\d+\s*(?:حبة|حبات|pcs|pc)\b/gi, " ")
+  )
+
+const pickBestArabicTitleSegment = (title?: string | null) => {
+  const segments = normalizeText(title)
+    .split(/\s*[|/\u2013\u2014-]\s*/)
+    .map((segment) => normalizeText(segment))
+    .filter(Boolean)
+
+  if (!segments.length) {
+    return ""
+  }
+
+  const scored = segments
+    .map((segment) => ({
+      segment,
+      arabicChars: (segment.match(/[\u0600-\u06FF]/g) || []).length,
+      latinChars: (segment.match(/[A-Za-z]/g) || []).length,
+    }))
+    .sort((left, right) => {
+      if (right.arabicChars !== left.arabicChars) {
+        return right.arabicChars - left.arabicChars
+      }
+
+      return left.latinChars - right.latinChars
+    })
+
+  return scored[0]?.segment || ""
+}
+
+const buildArabicSearchName = (product: ProductRecord) => {
+  const bestArabicSegment = pickBestArabicTitleSegment(product.title)
+  const cleanedArabicSegment = stripTitleMeasurements(
+    stripArabicQueryPrefixes(cleanGenericSeoFillers(bestArabicSegment))
+  )
+
+  if (containsArabic(cleanedArabicSegment)) {
+    return cleanedArabicSegment
+  }
+
+  const fallbackArabic = stripTitleMeasurements(
+    stripArabicQueryPrefixes(cleanGenericSeoFillers(product.title))
+  )
+
+  return fallbackArabic || normalizeText(product.title)
 }
 
 const getProductMetadataValue = (
@@ -310,6 +388,11 @@ const resolveCategoryLabel = (product: ProductRecord) => {
 }
 
 const buildSeoProductName = (product: ProductRecord) => {
+  const arabicName = buildArabicSearchName(product)
+  if (containsArabic(arabicName)) {
+    return arabicName
+  }
+
   const rawTitle = cleanGenericSeoFillers(product.title)
   const title = containsArabic(rawTitle) ? rawTitle : stripSearchNoise(rawTitle) || rawTitle
   const brandNames = getBrandNames(product)
@@ -412,16 +495,7 @@ export const shouldRefreshSeo = (
 }
 
 export const buildSearchQuery = (product: ProductRecord) => {
-  const seoProductName = buildSeoProductName(product)
-  const categoryLabel = resolveCategoryLabel(product)
-  const brandNames = getBrandNames(product)
-
-  return uniqueByNormalize([
-    seoProductName,
-    categoryLabel,
-    ...brandNames,
-    "السعودية",
-  ]).join(" ")
+  return buildArabicSearchName(product)
 }
 
 const getStorefrontBaseUrl = () => {
