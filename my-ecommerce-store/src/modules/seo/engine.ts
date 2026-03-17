@@ -176,24 +176,25 @@ export const sanitizeSeoAiSettings = (
 
 export const DEFAULT_SEO_PROMPT_SETTINGS: SeoPromptSettings = {
   global_instructions:
-    "Write in professional Arabic for a Saudi vape ecommerce store. Keep copy clear, useful, and conversion-focused. Avoid keyword stuffing and exaggerated claims.",
+    "اكتب محتوى احترافيًا باللغة العربية لمتجر فيب يستهدف السوق السعودي. يجب أن يكون النص طبيعيًا وسهل القراءة ويركز على مساعدة العميل في اتخاذ قرار الشراء مع تحسين ظهور الصفحة في محركات البحث. لا تنسخ من المنافسين، ولا تخترع مواصفات غير موجودة، ولا تستخدم حشوًا بالكلمات المفتاحية.",
   meta_title_instructions:
-    "Write a strong SEO meta title under 60 characters using product name and intent naturally.",
+    "اكتب Meta Title احترافيًا بين 50 و60 حرفًا. ابدأ باسم المنتج نفسه، ثم أضف الفئة أو النوع المناسب فقط، ثم ميزة رئيسية تحفز على النقر. تجنب التكرار والكلمات العامة والمبالغة.",
   meta_description_instructions:
-    "Write a persuasive SEO meta description between 140 and 160 characters with a clear buyer benefit and CTA.",
+    "اكتب Meta Description احترافيًا بين 140 و155 حرفًا. يجب أن يتضمن اسم المنتج، والفائدة الأساسية، وصياغة تشجع على الشراء، بدون تكرار أو كلمات عامة.",
   product_description_instructions:
-    "Write a professional Arabic HTML product description for Saudi market using clear structure, practical benefits, and natural brand/product naming.",
+    "اكتب وصف منتج احترافيًا ومحسنًا لمحركات البحث باللغة العربية للسوق السعودي. يجب أن يكون واضحًا، مبنيًا على معلومات حقيقية، ومقنعًا، وأفضل من نتائج البحث من حيث التنظيم والفائدة.",
 }
 
 const DESCRIPTION_STRUCTURE_POLICY = [
-  "The product description MUST be in Arabic (MSA) and between 1200 and 1600 words.",
-  "Use only simple HTML tags: h2, h3, p, ul, li, strong, a.",
-  "Follow this exact H2 order: Introduction, Product Overview, Key Features, Technical Specifications, Design and Build Quality, Performance and Vapor Production, Our Review, How to Use, Comparison, Why Vapers Choose This Device, Who Should Use This Product, Why Buy From Our Store, Explore Related Products, Frequently Asked Questions.",
-  "Frequently Asked Questions must include 5 to 7 Q&A items.",
-  "Key Features must be bullet points using ul/li.",
-  "Write unique content that is more complete and better structured than competitors. Do not copy.",
-  "Use natural internal links in the body with 3 to 5 clickable anchors.",
-  "Internal links must be only to relevant pages inside this same store domain.",
+  "يجب أن يكون الوصف بالعربية الفصحى، والأفضل بين 800 و1200 كلمة، وإذا كانت المعلومات قليلة فاكتب أقل بدون حشو.",
+  "استخدم فقط HTML بسيط: h2, h3, p, ul, li, strong, a.",
+  "ابدأ بفقرة تمهيدية بدون عنوان.",
+  "اتبع عناوين H2 التالية بالترتيب: نظرة عامة على المنتج، أهم المميزات، المواصفات التقنية، التصميم وجودة التصنيع، الأداء وتجربة الاستخدام، تقييمنا للمنتج، طريقة الاستخدام، مقارنة مع منتجات مشابهة، لماذا يختار المستخدمون هذا المنتج، لمن يناسب هذا المنتج، لماذا تشتري من متجرنا، منتجات قد تهمك، الأسئلة الشائعة.",
+  "قسم أهم المميزات يجب أن يكون نقاطًا باستخدام ul/li فقط.",
+  "قسم الأسئلة الشائعة يجب أن يحتوي 5 إلى 7 أسئلة وأجوبة حقيقية.",
+  "لا تذكر أي معلومة غير مؤكدة من نتائج البحث أو من بيانات المنتج الحالية.",
+  "لا تستخدم عبارات عامة تصلح لأي منتج.",
+  "استخدم 2 إلى 3 روابط داخلية فقط ومن نفس المتجر فقط.",
 ].join(" ")
 
 export const normalizeText = (value?: string | null) =>
@@ -574,48 +575,45 @@ const getProductBrandHandle = (product: ProductRecord) => {
     : ""
 }
 
-const buildInternalLinkCandidates = (product: ProductRecord) => {
+const getCategoryLinkByKind = (productKind: SeoProductKind) => {
   const baseUrl = getStorefrontBaseUrl()
-  const localePrefix = "/ar"
+
+  if (productKind === "device") {
+    return `${baseUrl}/ar/categories/أجهزة-شيشة-الكترونية`
+  }
+
+  if (productKind === "pod") {
+    return `${baseUrl}/ar/categories/بودات`
+  }
+
+  if (productKind === "coil") {
+    return `${baseUrl}/ar/categories/كويلات`
+  }
+
+  if (productKind === "salt-liquid") {
+    return `${baseUrl}/ar/categories/نكهات-سحبة-سولت-نيكوتين`
+  }
+
+  if (productKind === "freebase-liquid") {
+    return `${baseUrl}/ar/categories/نكهات-فيب-شيشة-نكهات-معسل-الكتروني`
+  }
+
+  return `${baseUrl}/ar/store`
+}
+
+const buildInternalLinkCandidates = (product: ProductRecord) => {
+  const productKind = inferSeoProductKind(product)
+  const baseUrl = getStorefrontBaseUrl()
   const links = new Set<string>()
 
-  links.add(`${baseUrl}${localePrefix}/store`)
-  links.add(`${baseUrl}${localePrefix}/brands`)
-  links.add(`${baseUrl}${localePrefix}/categories`)
-
-  const safeHandle = encodeURIComponent(normalizeText(product.handle))
-  if (safeHandle) {
-    links.add(`${baseUrl}${localePrefix}/products/${safeHandle}`)
-  }
-
-  const safeTitle = normalizeText(product.title)
-  if (safeTitle) {
-    links.add(`${baseUrl}${localePrefix}/store?q=${encodeURIComponent(safeTitle)}`)
-  }
+  links.add(getCategoryLinkByKind(productKind))
 
   const brandHandle = getProductBrandHandle(product)
   if (brandHandle) {
-    links.add(`${baseUrl}${localePrefix}/brands/${encodeURIComponent(brandHandle)}`)
+    links.add(`${baseUrl}/ar/brands/${encodeURIComponent(brandHandle)}`)
   }
 
-  const collectionHandle = normalizeText(product.collection?.handle)
-  if (collectionHandle) {
-    links.add(
-      `${baseUrl}${localePrefix}/collections/${encodeURIComponent(collectionHandle)}`
-    )
-  }
-
-  for (const category of product.categories || []) {
-    const categoryHandle = normalizeText(category?.handle)
-    if (!categoryHandle) {
-      continue
-    }
-    links.add(
-      `${baseUrl}${localePrefix}/categories/${encodeURIComponent(categoryHandle)}`
-    )
-  }
-
-  return Array.from(links).slice(0, 8)
+  return Array.from(links).slice(0, 3)
 }
 
 const fetchCompetitorPageExcerpt = async (url: string) => {
@@ -1308,6 +1306,68 @@ const sanitizeGeneratedSeoOutput = (
   return normalizeText(withoutFillers)
 }
 
+const validateGeneratedSeoContent = (input: {
+  product: ProductRecord
+  target: SeoFieldTarget
+  content: string
+}) => {
+  const productKind = inferSeoProductKind(input.product)
+  const normalized = normalizeText(input.content)
+  const productName = normalizeText(buildArabicSearchName(input.product))
+
+  if (input.target === "meta_title") {
+    if (normalized.length < 45 || normalized.length > 60) {
+      throw new Error("Generated meta title did not meet the required length.")
+    }
+
+    if (productName && !normalized.includes(productName)) {
+      throw new Error("Generated meta title must start from the actual Arabic product name.")
+    }
+  }
+
+  if (input.target === "meta_description") {
+    if (normalized.length < 140 || normalized.length > 155) {
+      throw new Error("Generated meta description did not meet the required length.")
+    }
+  }
+
+  if (productKind === "salt-liquid" || productKind === "freebase-liquid") {
+    if (/(جهاز فيب|جهاز سحبة|سحبة جاهزة|بود سيستم|جهاز بود)/i.test(normalized)) {
+      throw new Error("Generated content described a liquid product as a device.")
+    }
+  }
+
+  if (input.target === "description") {
+    if (/Introduction\b/i.test(input.content)) {
+      throw new Error("Generated description used English headings instead of the required Arabic structure.")
+    }
+
+    const requiredArabicHeadings = [
+      "نظرة عامة على المنتج",
+      "أهم المميزات",
+      "المواصفات التقنية",
+      "التصميم وجودة التصنيع",
+      "الأداء وتجربة الاستخدام",
+      "تقييمنا للمنتج",
+      "طريقة الاستخدام",
+      "مقارنة مع منتجات مشابهة",
+      "لماذا يختار المستخدمون هذا المنتج",
+      "لمن يناسب هذا المنتج",
+      "لماذا تشتري من متجرنا",
+      "منتجات قد تهمك",
+      "الأسئلة الشائعة",
+    ]
+
+    const matchedHeadingCount = requiredArabicHeadings.filter((heading) =>
+      input.content.includes(heading)
+    ).length
+
+    if (matchedHeadingCount < 8) {
+      throw new Error("Generated description did not follow the required Arabic content structure.")
+    }
+  }
+}
+
 const getProviderApiKey = (settings: SeoAiSettings) => {
   if (settings.provider === "openai") {
     return settings.openai_api_key || normalizeText(process.env.OPENAI_API_KEY)
@@ -1517,6 +1577,12 @@ export const generateSeoFieldWithAI = async (input: {
       "Generated description matched the current description too closely. Try regenerating."
     )
   }
+
+  validateGeneratedSeoContent({
+    product: input.product,
+    target: input.target,
+    content: finalContent,
+  })
 
   return {
     content: finalContent,
