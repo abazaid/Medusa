@@ -129,6 +129,18 @@ export const COMPATIBILITY_RULES: ProductCompatibilityRule[] = [
     podPatterns: ["caliburn a2 replacement pods"],
   },
   {
+    key: "uwell-caliburn-gpp",
+    devicePatterns: [
+      "caliburn g5 lite",
+      "caliburn g5 lite koko",
+      "caliburn g5 lite se",
+      "caliburn g3",
+      "caliburn g4",
+      "caliburn g5",
+    ],
+    podPatterns: ["caliburn gpp pod", "gpp g3 g4"],
+  },
+  {
     key: "smok-nord-1",
     devicePatterns: ["smok nord kit"],
     podPatterns: ["nord 1 replacement pod", "nord 1 replacement pod and coils"],

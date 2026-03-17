@@ -24,7 +24,10 @@ type CompatibilityUpdate = {
   compatibleProducts: ProductRecord[]
 }
 
-const parseBooleanArg = (flag: string) => process.argv.includes(flag)
+const parseBooleanArg = (flag: string) =>
+  process.argv.includes(flag) ||
+  process.env.SYNC_COMPATIBILITY_WRITE === "true" ||
+  process.env.COMPATIBILITY_WRITE === "true"
 
 const asString = (value: unknown) =>
   typeof value === "string" ? value.replace(/\s+/g, " ").trim() : ""
