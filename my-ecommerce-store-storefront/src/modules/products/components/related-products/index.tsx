@@ -11,13 +11,23 @@ type RelatedProductsProps = {
   subtitle?: string
 }
 
-const shuffleProducts = <T,>(items: T[]) => {
-  const next = [...items]
-  for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[next[i], next[j]] = [next[j], next[i]]
+const parseArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean)
   }
-  return next
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed)
+        ? parsed.map((item) => String(item).trim()).filter(Boolean)
+        : []
+    } catch {
+      return []
+    }
+  }
+
+  return []
 }
 
 export default async function RelatedProducts({
@@ -32,20 +42,18 @@ export default async function RelatedProducts({
     return null
   }
 
+  const metadata = (product.metadata as Record<string, unknown> | null) || {}
+  const compatibleProductIds = parseArray(metadata.compatible_product_ids)
+
+  if (!compatibleProductIds.length) {
+    return null
+  }
+
   const queryParams: HttpTypes.StoreProductListParams = {}
   if (region?.id) {
     queryParams.region_id = region.id
   }
-
-  const categoryIds = (product.categories || [])
-    .map((category) => category.id)
-    .filter((id): id is string => Boolean(id))
-
-  if (!categoryIds.length) {
-    return null
-  }
-
-  queryParams.category_id = categoryIds
+  queryParams.id = compatibleProductIds
   queryParams.limit = 24
   queryParams.is_giftcard = false
 
@@ -57,7 +65,17 @@ export default async function RelatedProducts({
       (responseProduct) =>
         responseProduct.id !== product.id && isProductInStock(responseProduct)
     )
-    return shuffleProducts(filtered).slice(0, 8)
+    const order = new Map(
+      compatibleProductIds.map((id, index) => [id, index])
+    )
+
+    return filtered
+      .sort((left, right) => {
+        const leftOrder = order.get(left.id) ?? Number.MAX_SAFE_INTEGER
+        const rightOrder = order.get(right.id) ?? Number.MAX_SAFE_INTEGER
+        return leftOrder - rightOrder
+      })
+      .slice(0, 8)
   })
 
   if (!products.length) {

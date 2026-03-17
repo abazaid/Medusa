@@ -191,6 +191,145 @@ const DESCRIPTION_STRUCTURE_POLICY = [
 export const normalizeText = (value?: string | null) =>
   (value || "").replace(/\s+/g, " ").trim()
 
+const GENERIC_SEO_FILLER_PATTERNS = [
+  /(?:^|\s|["'([{-])(منتج جاهز|جهاز جاهز)(?=$|\s|["')\]}.!,:؛؟-])/gi,
+]
+
+const GENERIC_PRODUCT_TOKENS = [
+  "منتج جاهز",
+  "جهاز جاهز",
+  "جاهز",
+  "product",
+  "device",
+]
+
+const SEARCH_NOISE_TOKENS = [
+  "vape",
+  "vape pen",
+  "vapepen",
+  "pen",
+  "device",
+  "product",
+  "منتج",
+  "جهاز",
+  "سيجارة",
+  "سيجارة إلكترونية",
+  "electronic cigarette",
+]
+
+const CATEGORY_LABEL_MAPPINGS: Array<{ match: string[]; label: string }> = [
+  { match: ["disposable", "disposable vape", "سحبة", "سحبات", "vape pen"], label: "سحبة جاهزة" },
+  { match: ["pod system", "pods", "pod", "بود", "بودات"], label: "بود" },
+  { match: ["replacement pods", "prefilled", "بودات معبأة", "بودات بديلة"], label: "بودات بديلة" },
+  { match: ["coil", "coils", "كويل", "كويلات"], label: "كويل" },
+  { match: ["e-juice", "e-liquid", "liquid", "juice", "نكهة", "نكهات", "سائل"], label: "سائل إلكتروني" },
+  { match: ["nicotine pouch", "nicotine pouches", "أكياس نيكوتين"], label: "أكياس نيكوتين" },
+]
+
+const uniqueByNormalize = (values: string[]) => {
+  const seen = new Set<string>()
+
+  return values.filter((value) => {
+    const normalized = normalizeText(value).toLowerCase()
+    if (!normalized || seen.has(normalized)) {
+      return false
+    }
+    seen.add(normalized)
+    return true
+  })
+}
+
+const cleanGenericSeoFillers = (value?: string | null) =>
+  normalizeText(
+    GENERIC_SEO_FILLER_PATTERNS.reduce(
+      (current, pattern) => current.replace(pattern, " "),
+      value || ""
+    )
+  )
+
+const containsArabic = (value: string) => /[\u0600-\u06FF]/.test(value)
+
+const normalizeComparable = (value?: string | null) =>
+  normalizeText(value).toLowerCase()
+
+const stripSearchNoise = (value?: string | null) => {
+  let next = normalizeText(value)
+
+  for (const token of SEARCH_NOISE_TOKENS) {
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    next = next.replace(new RegExp(`(^|\\s)${escaped}(?=$|\\s)`, "gi"), " ")
+  }
+
+  return cleanGenericSeoFillers(next)
+}
+
+const getProductMetadataValue = (
+  product: ProductRecord,
+  key: string
+): string => {
+  const metadata = (product.metadata || {}) as Record<string, unknown>
+  return typeof metadata[key] === "string" ? normalizeText(String(metadata[key])) : ""
+}
+
+const getBrandNames = (product: ProductRecord) =>
+  uniqueByNormalize([
+    getProductMetadataValue(product, "brand_name_ar"),
+    getProductMetadataValue(product, "brand_name_en"),
+  ])
+
+const resolveCategoryLabel = (product: ProductRecord) => {
+  const candidates = uniqueByNormalize([
+    normalizeText(product.type?.value),
+    ...(product.categories || []).map((category) => normalizeText(category?.name)),
+    normalizeText(product.collection?.title),
+  ])
+
+  for (const candidate of candidates) {
+    const normalized = candidate.toLowerCase()
+
+    for (const mapping of CATEGORY_LABEL_MAPPINGS) {
+      if (mapping.match.some((token) => normalized.includes(token.toLowerCase()))) {
+        return mapping.label
+      }
+    }
+  }
+
+  const firstArabicSpecific = candidates.find((candidate) => {
+    if (!containsArabic(candidate)) {
+      return false
+    }
+
+    const comparable = normalizeComparable(candidate)
+    return (
+      comparable &&
+      !GENERIC_PRODUCT_TOKENS.some((token) => comparable.includes(token))
+    )
+  })
+
+  return firstArabicSpecific || ""
+}
+
+const buildSeoProductName = (product: ProductRecord) => {
+  const rawTitle = cleanGenericSeoFillers(product.title)
+  const title = containsArabic(rawTitle) ? rawTitle : stripSearchNoise(rawTitle) || rawTitle
+  const brandNames = getBrandNames(product)
+  const categoryLabel = resolveCategoryLabel(product)
+
+  const parts = uniqueByNormalize([
+    title,
+    ...brandNames.filter((brand) => {
+      const comparableTitle = normalizeComparable(title)
+      return !comparableTitle || !comparableTitle.includes(normalizeComparable(brand))
+    }),
+    categoryLabel &&
+    !normalizeComparable(title).includes(normalizeComparable(categoryLabel))
+      ? categoryLabel
+      : "",
+  ])
+
+  return parts.join(" ")
+}
+
 export const stripHtml = (value?: string | null) =>
   normalizeText(
     (value || "")
@@ -273,14 +412,16 @@ export const shouldRefreshSeo = (
 }
 
 export const buildSearchQuery = (product: ProductRecord) => {
-  const title = normalizeText(product.title)
-  const category = normalizeText(product.categories?.[0]?.name)
-  const type = normalizeText(product.type?.value)
-  const parts = [title, category, type, "Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©"]
-    .filter(Boolean)
-    .slice(0, 3)
+  const seoProductName = buildSeoProductName(product)
+  const categoryLabel = resolveCategoryLabel(product)
+  const brandNames = getBrandNames(product)
 
-  return parts.join(" ")
+  return uniqueByNormalize([
+    seoProductName,
+    categoryLabel,
+    ...brandNames,
+    "السعودية",
+  ]).join(" ")
 }
 
 const getStorefrontBaseUrl = () => {
@@ -862,6 +1003,7 @@ const buildGenerationPrompt = (input: {
   const metadata = (product.metadata || {}) as Record<string, unknown>
   const currentFieldValue = getCurrentFieldValue(product, input.target)
   const internalLinkCandidates = buildInternalLinkCandidates(product)
+  const seoProductName = buildSeoProductName(product)
   const categoryNames = (product.categories || [])
     .map((category) => normalizeText(category.name))
     .filter(Boolean)
@@ -870,6 +1012,8 @@ const buildGenerationPrompt = (input: {
   return [
     "You are an elite ecommerce SEO strategist and Arabic product copywriter for a Saudi Arabian vape store.",
     input.settings.global_instructions,
+    "Prefer a natural Arabic product name that reflects the actual brand and model.",
+    "Never use generic filler phrases such as منتج جاهز or جهاز جاهز unless they are literally part of the official product name.",
     getFieldPrompt(input.target, input.settings),
     ...buildResponseRules(input.target),
     ...buildTargetSpecificConstraints(
@@ -880,6 +1024,7 @@ const buildGenerationPrompt = (input: {
     "Use the top Saudi Google results and page excerpts as competitive context only. Do not copy them verbatim.",
     "",
     `Target field: ${input.target}`,
+    `Preferred Arabic SEO product name: ${seoProductName || product.title}`,
     `Product title: ${product.title}`,
     `Product handle: ${product.handle}`,
     `Product type: ${normalizeText(product.type?.value) || "Not specified"}`,
@@ -1001,6 +1146,19 @@ const enforceInternalLinksOnly = (html: string) => {
       return innerHtml
     }
   )
+}
+
+const sanitizeGeneratedSeoOutput = (
+  value: string,
+  target: SeoFieldTarget
+) => {
+  const withoutFillers = cleanGenericSeoFillers(value)
+
+  if (target === "description") {
+    return withoutFillers.replace(/\s{2,}/g, " ").trim()
+  }
+
+  return normalizeText(withoutFillers)
 }
 
 const getProviderApiKey = (settings: SeoAiSettings) => {
@@ -1178,10 +1336,12 @@ export const generateSeoFieldWithAI = async (input: {
 
   const finalContent =
     input.target === "meta_title"
-      ? truncate(normalizedContent, 60)
+      ? truncate(sanitizeGeneratedSeoOutput(normalizedContent, input.target), 60)
       : input.target === "meta_description"
-      ? truncate(normalizedContent, 160)
-      : enforceInternalLinksOnly(normalizedContent)
+      ? truncate(sanitizeGeneratedSeoOutput(normalizedContent, input.target), 160)
+      : enforceInternalLinksOnly(
+          sanitizeGeneratedSeoOutput(normalizedContent, input.target)
+        )
 
   if (
     input.target === "description" &&

@@ -70,23 +70,6 @@ const sanitizeDescription = (value?: string | null) =>
       ""
     )
 
-const isSaltNicotineProduct = (product: HttpTypes.StoreProduct) => {
-  const metadata = (product.metadata as Record<string, unknown> | null) || {}
-  const hint = [
-    product.title,
-    product.description,
-    ...(product.categories || []).map((c) => c.name),
-    ...(product.tags || []).map((t) => t.value),
-    String(metadata.nicotine_type || ""),
-    String(metadata.product_type || ""),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-
-  return /(nic\s*salt|salt\s*nicotine|salt\s*e-?liquid|سولت|nicotine salt)/i.test(hint)
-}
-
 const renderStars = (rating: number) =>
   "★".repeat(Math.max(0, Math.min(5, Math.round(rating))))
 
@@ -155,8 +138,14 @@ const ProductTemplate = async ({
     limit: 8,
   })
 
-  const isSaltProduct = isSaltNicotineProduct(product)
-  const showReplacementTab = !isSaltProduct
+  const compatibilityKind =
+    typeof metadata.compatibility_kind === "string"
+      ? metadata.compatibility_kind
+      : ""
+  const compatibleProductIds = parseArray<string>(metadata.compatible_product_ids)
+  const showReplacementTab =
+    ["device", "pod", "coil"].includes(compatibilityKind) &&
+    compatibleProductIds.length > 0
   const deliveryCards =
     locale === "ar"
       ? [
@@ -375,9 +364,17 @@ const ProductTemplate = async ({
                     countryCode={countryCode}
                     title={labels.replacement}
                     subtitle={
-                      isArabic
-                        ? "بودات بديلة، كويلات، وسوائل مرتبطة بهذا المنتج."
-                        : "Replacement pods, coils, and related e-liquids."
+                      compatibilityKind === "device"
+                        ? isArabic
+                          ? "بودات وكويلات متوافقة مع هذا الجهاز."
+                          : "Compatible pods and coils for this device."
+                        : compatibilityKind === "pod"
+                        ? isArabic
+                          ? "أجهزة وكويلات متوافقة مع هذا البود."
+                          : "Compatible devices and coils for this pod."
+                        : isArabic
+                        ? "أجهزة وبودات متوافقة مع هذا الكويل."
+                        : "Compatible devices and pods for this coil."
                     }
                   />
                 </Suspense>

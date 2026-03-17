@@ -26,6 +26,7 @@
     "classify:product-highlights": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/classify-product-highlights.ts",
     "rewrite:product-links": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/rewrite-product-description-links.ts",
     "repair:inventory-levels": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/repair-inventory-levels.ts",
+    "sync:compatibility": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/sync-product-compatibility.ts",
     "email:test": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/send-test-email.ts",
     "search:sync": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/sync-meilisearch.ts",
     "optimize:performance": "node ./node_modules/@medusajs/cli/cli.js exec ./src/scripts/optimize-store-performance.ts",
