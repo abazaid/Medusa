@@ -127,6 +127,46 @@ const buildNextMetadata = (
   return nextMetadata
 }
 
+const getStorefrontBaseUrl = () => {
+  const explicit =
+    process.env.STOREFRONT_BASE_URL ||
+    process.env.STORE_FRONTEND_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.STORE_CORS?.split(",")[0]
+
+  return (explicit || "https://vapehubksa.com").trim().replace(/\/+$/, "")
+}
+
+const revalidateStorefrontSeo = async (product: ProductRecord) => {
+  const secret = process.env.STOREFRONT_REVALIDATE_SECRET
+
+  if (!secret) {
+    return
+  }
+
+  const endpoint = `${getStorefrontBaseUrl()}/api/revalidate/seo`
+
+  try {
+    await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-revalidate-secret": secret,
+      },
+      body: JSON.stringify({
+        product: {
+          title: product.title,
+          handle: product.handle,
+          metadata: product.metadata || {},
+        },
+        locales: ["ar"],
+      }),
+    })
+  } catch {
+    // Best effort only. SEO save should not fail if storefront revalidation is unavailable.
+  }
+}
+
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
@@ -218,6 +258,15 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
           ? { description: fieldSet.description }
           : {}),
         metadata: nextMetadata,
+      })
+
+      await revalidateStorefrontSeo({
+        ...product,
+        metadata: nextMetadata,
+        description:
+          typeof fieldSet.description === "string"
+            ? fieldSet.description
+            : product.description,
       })
 
       res.status(200).json({
@@ -346,6 +395,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
           ? { description: generatedFields.description }
           : {}),
         metadata: nextMetadata,
+      })
+
+      await revalidateStorefrontSeo({
+        ...product,
+        metadata: nextMetadata,
+        description: generatedFields.description || product.description,
       })
     }
 
