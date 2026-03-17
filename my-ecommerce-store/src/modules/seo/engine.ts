@@ -75,6 +75,14 @@ export type SeoAiSettings = {
   claude_api_key: string
 }
 
+type SeoProductKind =
+  | "salt-liquid"
+  | "freebase-liquid"
+  | "device"
+  | "pod"
+  | "coil"
+  | "generic"
+
 type GeneratedFieldResult = {
   content: string
   reasoning?: string
@@ -339,6 +347,42 @@ const buildArabicSearchName = (product: ProductRecord) => {
   )
 
   return fallbackArabic || normalizeText(product.title)
+}
+
+const inferSeoProductKind = (product: ProductRecord): SeoProductKind => {
+  const metadata = (product.metadata || {}) as Record<string, unknown>
+  const text = normalizeText(
+    [
+      product.title,
+      product.description,
+      normalizeText(product.type?.value),
+      ...(product.categories || []).map((category) => normalizeText(category?.name)),
+      typeof metadata.nicotine_type === "string" ? metadata.nicotine_type : "",
+      typeof metadata.product_type === "string" ? metadata.product_type : "",
+    ].join(" ")
+  ).toLowerCase()
+
+  if (/(nic\s*salt|salt nicotine|salt e-?liquid|سولت|salt\b)/i.test(text)) {
+    return "salt-liquid"
+  }
+
+  if (/(freebase|e-?liquid|juice|liquid|نكهة|نكهات|سائل)/i.test(text)) {
+    return "freebase-liquid"
+  }
+
+  if (/(coil|coils|كويل|كويلات|ohm|mesh)/i.test(text)) {
+    return "coil"
+  }
+
+  if (/(pod|pods|بود|بودات|cartridge|replacement pod)/i.test(text)) {
+    return "pod"
+  }
+
+  if (/(device|kit|starter kit|mod|pod system|جهاز|سحبة|شيشة)/i.test(text)) {
+    return "device"
+  }
+
+  return "generic"
 }
 
 const getProductMetadataValue = (
@@ -1047,13 +1091,29 @@ const buildResponseRules = (target: SeoFieldTarget) => {
 const buildTargetSpecificConstraints = (
   target: SeoFieldTarget,
   currentFieldValue: string,
-  internalLinkCandidates: string[]
+  internalLinkCandidates: string[],
+  productKind: SeoProductKind
 ) => {
+  const kindRules =
+    productKind === "salt-liquid" || productKind === "freebase-liquid"
+      ? [
+          "This product is a vape liquid/flavor, not a device, pod, or coil.",
+          "Do not describe it as جهاز or جهاز فيب or سحبة جاهزة or بود سيستم or كويل.",
+          "Keep the wording specific to flavor, nicotine salt, liquid profile, bottle, and taste experience only.",
+        ]
+      : productKind === "device"
+      ? [
+          "This product is a vaping device, not a liquid flavor.",
+          "Do not describe it as نكهة or سولت or سائل إلكتروني unless explicitly discussing compatibility.",
+        ]
+      : []
+
   if (target !== "description") {
-    return []
+    return kindRules
   }
 
   return [
+    ...kindRules,
     "For product description generation, analyze the top 5 competitor results and their page excerpts first.",
     "Compare their strengths and weaknesses, then write a stronger description for this store.",
     "Your response is invalid if it is substantially similar to the current description.",
@@ -1078,6 +1138,7 @@ const buildGenerationPrompt = (input: {
   const currentFieldValue = getCurrentFieldValue(product, input.target)
   const internalLinkCandidates = buildInternalLinkCandidates(product)
   const seoProductName = buildSeoProductName(product)
+  const productKind = inferSeoProductKind(product)
   const categoryNames = (product.categories || [])
     .map((category) => normalizeText(category.name))
     .filter(Boolean)
@@ -1093,12 +1154,14 @@ const buildGenerationPrompt = (input: {
     ...buildTargetSpecificConstraints(
       input.target,
       currentFieldValue,
-      internalLinkCandidates
+      internalLinkCandidates,
+      productKind
     ),
     "Use the top Saudi Google results and page excerpts as competitive context only. Do not copy them verbatim.",
     "",
     `Target field: ${input.target}`,
     `Preferred Arabic SEO product name: ${seoProductName || product.title}`,
+    `Detected product kind: ${productKind}`,
     `Product title: ${product.title}`,
     `Product handle: ${product.handle}`,
     `Product type: ${normalizeText(product.type?.value) || "Not specified"}`,
@@ -1224,9 +1287,19 @@ const enforceInternalLinksOnly = (html: string) => {
 
 const sanitizeGeneratedSeoOutput = (
   value: string,
-  target: SeoFieldTarget
+  target: SeoFieldTarget,
+  productKind: SeoProductKind
 ) => {
-  const withoutFillers = cleanGenericSeoFillers(value)
+  let withoutFillers = cleanGenericSeoFillers(value)
+
+  if (productKind === "salt-liquid" || productKind === "freebase-liquid") {
+    withoutFillers = withoutFillers
+      .replace(/\bجهاز فيب\b/gi, " ")
+      .replace(/\bجهاز سحبة\b/gi, " ")
+      .replace(/\bسحبة جاهزة\b/gi, " ")
+      .replace(/\bبود سيستم\b/gi, " ")
+      .replace(/\bجهاز بود\b/gi, " ")
+  }
 
   if (target === "description") {
     return withoutFillers.replace(/\s{2,}/g, " ").trim()
@@ -1410,11 +1483,29 @@ export const generateSeoFieldWithAI = async (input: {
 
   const finalContent =
     input.target === "meta_title"
-      ? truncate(sanitizeGeneratedSeoOutput(normalizedContent, input.target), 60)
+      ? truncate(
+          sanitizeGeneratedSeoOutput(
+            normalizedContent,
+            input.target,
+            inferSeoProductKind(input.product)
+          ),
+          60
+        )
       : input.target === "meta_description"
-      ? truncate(sanitizeGeneratedSeoOutput(normalizedContent, input.target), 160)
+      ? truncate(
+          sanitizeGeneratedSeoOutput(
+            normalizedContent,
+            input.target,
+            inferSeoProductKind(input.product)
+          ),
+          160
+        )
       : enforceInternalLinksOnly(
-          sanitizeGeneratedSeoOutput(normalizedContent, input.target)
+          sanitizeGeneratedSeoOutput(
+            normalizedContent,
+            input.target,
+            inferSeoProductKind(input.product)
+          )
         )
 
   if (
