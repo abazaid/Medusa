@@ -45,6 +45,16 @@ type SeoResponse = {
 
 type GenerateResponse = {
   message?: string
+  before?: {
+    meta_title: string
+    meta_description: string
+    description: string
+  }
+  after?: {
+    meta_title: string
+    meta_description: string
+    description: string
+  }
   product?: Partial<SeoProduct>
 }
 
@@ -113,6 +123,9 @@ const truncate = (value: string, limit: number) => {
 
 const stripHtml = (value: string) =>
   value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+
+const normalizeComparisonValue = (value: string | undefined | null) =>
+  (value || "").replace(/\s+/g, " ").trim()
 
 const SeoPage = () => {
   const [products, setProducts] = useState<SeoProduct[]>([])
@@ -494,6 +507,101 @@ const SeoPage = () => {
     )
   }
 
+  const generateVisibleAllWithSummary = async () => {
+    setMessage("")
+    setError("")
+    let hasFailure = false
+    let changedCount = 0
+    let unchangedCount = 0
+
+    for (const product of visibleProducts) {
+      setActionKey(`bulk:${product.id}`)
+
+      try {
+        const response = await fetch(`/admin/seo/${product.id}/generate`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            target: "all",
+            preview: false,
+          }),
+        })
+
+        const payload = (await response.json()) as GenerateResponse
+
+        if (!response.ok) {
+          throw new Error(payload.message || "Failed to generate all SEO fields.")
+        }
+
+        const before = payload.before || {
+          meta_title: product.meta_title,
+          meta_description: product.meta_description,
+          description: product.description,
+        }
+
+        const after = payload.after || {
+          meta_title: payload.product?.meta_title ?? product.meta_title,
+          meta_description:
+            payload.product?.meta_description ?? product.meta_description,
+          description: payload.product?.description ?? product.description,
+        }
+
+        const didChange =
+          normalizeComparisonValue(before.meta_title) !==
+            normalizeComparisonValue(after.meta_title) ||
+          normalizeComparisonValue(before.meta_description) !==
+            normalizeComparisonValue(after.meta_description) ||
+          normalizeComparisonValue(stripHtml(before.description)) !==
+            normalizeComparisonValue(stripHtml(after.description))
+
+        if (didChange) {
+          changedCount += 1
+        } else {
+          unchangedCount += 1
+        }
+
+        setProducts((current) =>
+          current.map((item) =>
+            item.id === product.id
+              ? {
+                  ...item,
+                  meta_title: payload.product?.meta_title ?? item.meta_title,
+                  meta_description:
+                    payload.product?.meta_description ?? item.meta_description,
+                  description: payload.product?.description ?? item.description,
+                  seo_last_optimized_at:
+                    payload.product?.seo_last_optimized_at ??
+                    item.seo_last_optimized_at,
+                }
+              : item
+          )
+        )
+      } catch (err) {
+        hasFailure = true
+        setError(
+          err instanceof Error
+            ? `فشل أثناء توليد بعض العناصر: ${err.message}`
+            : "Failed to generate all SEO fields."
+        )
+        break
+      }
+    }
+
+    setActionKey("")
+
+    if (!hasFailure) {
+      await loadData()
+      setMessage(
+        changedCount > 0
+          ? `تم الحفظ الجماعي بنجاح. تغيّر ${changedCount} منتج${changedCount === 1 ? "" : "ات"} ولم يتغير ${unchangedCount} منتج${unchangedCount === 1 ? "" : "ات"}.`
+          : `اكتمل التوليد الجماعي، لكن لم تتغير النتائج الظاهرة. المنتجات غير المتغيرة: ${unchangedCount}.`
+      )
+    }
+  }
+
   const generateVisibleAll = async () => {
     setMessage("")
     setError("")
@@ -587,8 +695,9 @@ const SeoPage = () => {
           <button
             type="button"
             style={buttonStyle}
-            onClick={() => void generateVisibleAll()}
+            onClick={() => void generateVisibleAllWithSummary()}
             disabled={!visibleProducts.length || !!actionKey}
+            title="ينفذ الحفظ مباشرة على كل النتائج الظاهرة بدون نافذة قبل/بعد"
           >
             توليد الكل للنتائج الظاهرة
           </button>
