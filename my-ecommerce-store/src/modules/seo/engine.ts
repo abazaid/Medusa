@@ -1331,6 +1331,10 @@ const sanitizeGeneratedSeoOutput = (
       .replace(/\bسحبة جاهزة\b/gi, " ")
       .replace(/\bبود سيستم\b/gi, " ")
       .replace(/\bجهاز بود\b/gi, " ")
+      .replace(/\bمدخنين سابقين\b/gi, " ")
+      .replace(/\bخالي من السكر\b/gi, " ")
+      .replace(/\bطبيعية\b/gi, " ")
+      .replace(/\bأصيلة\b/gi, " ")
   }
 
   if (productKind === "pod") {
@@ -1351,6 +1355,7 @@ const sanitizeGeneratedSeoOutput = (
       .replace(/\bخيار صحي\b/gi, " ")
       .replace(/\bأقل ضرر(?:اً|ًا)?\b/gi, " ")
       .replace(/\bآمن(?:ة)?\b/gi, " ")
+      .replace(/\bصحة الفم والأسنان\b/gi, " ")
   }
 
   withoutFillers = withoutFillers
@@ -1406,13 +1411,13 @@ const normalizeMetaTitleLength = (value: string, product: ProductRecord) => {
     productKind === "device"
       ? "أداء ثابت"
       : productKind === "pod"
-      ? "توافق واضح"
+      ? "تركيب محكم"
       : productKind === "coil"
       ? "نكهة أوضح"
       : productKind === "salt-liquid"
-      ? "سحب سلس"
+      ? "طعم تبغ واضح"
       : productKind === "freebase-liquid"
-      ? "نكهة غنية"
+      ? "بخار متوازن"
       : "اختيار مناسب"
 
   let normalized = ensureMetaTitleStartsWithProductName(value, product)
@@ -1503,7 +1508,7 @@ const validateGeneratedSeoContent = (input: {
   }
 
   if (productKind === "salt-liquid" || productKind === "freebase-liquid") {
-    if (/(خيار صحي|أقل ضرر|آمنة|آمن)/i.test(normalized)) {
+    if (/(خيار صحي|أقل ضرر|آمنة|آمن|مدخنين سابقين|خالي من السكر|صحة الفم والأسنان)/i.test(normalized)) {
       throw new Error("Generated content included unsupported health or safety claims.")
     }
   }
