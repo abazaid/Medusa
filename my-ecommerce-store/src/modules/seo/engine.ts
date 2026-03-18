@@ -1113,6 +1113,18 @@ const buildTargetSpecificConstraints = (
           "Do not describe it as جهاز or جهاز فيب or سحبة جاهزة or بود سيستم or كويل.",
           "Keep the wording specific to flavor, nicotine salt, liquid profile, bottle, and taste experience only.",
         ]
+      : productKind === "pod"
+      ? [
+          "This product is a replacement pod/cartridge, not a liquid flavor and not a full device.",
+          "Do not describe it as نكهة or نكهة فيب or سائل إلكتروني or جهاز فيب or جهاز متكامل.",
+          "Focus on compatibility, pod capacity, built-in coil if confirmed, filling method, leakage resistance, and daily ease of use.",
+          "Do not invent resistance, capacity, coil type, or pack size unless clearly supported by the search results.",
+        ]
+      : productKind === "coil"
+      ? [
+          "This product is a replacement coil, not a liquid flavor and not a full device.",
+          "Focus on resistance, compatible devices/pods, vapor behavior, flavor delivery, and lifespan only when supported.",
+        ]
       : productKind === "device"
       ? [
           "This product is a vaping device, not a liquid flavor.",
@@ -1282,13 +1294,21 @@ const isInternalLink = (href: string, baseUrl: string) => {
   }
 }
 
-const enforceInternalLinksOnly = (html: string) => {
+const enforceInternalLinksOnly = (html: string, allowedInternalLinks?: string[]) => {
   const baseUrl = getStorefrontBaseUrl()
+  const normalizedAllowedLinks = new Set(
+    (allowedInternalLinks || []).map((link) => normalizeText(link)).filter(Boolean)
+  )
 
   return (html || "").replace(
     /<a\b([^>]*?)href=(["'])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi,
     (_fullMatch, beforeHref, quote, href, afterHref, innerHtml) => {
-      if (isInternalLink(href, baseUrl)) {
+      const normalizedHref = normalizeText(href)
+
+      if (
+        isInternalLink(href, baseUrl) &&
+        (!normalizedAllowedLinks.size || normalizedAllowedLinks.has(normalizedHref))
+      ) {
         return `<a${beforeHref}href=${quote}${href}${quote}${afterHref}>${innerHtml}</a>`
       }
 
@@ -1311,6 +1331,16 @@ const sanitizeGeneratedSeoOutput = (
       .replace(/\bسحبة جاهزة\b/gi, " ")
       .replace(/\bبود سيستم\b/gi, " ")
       .replace(/\bجهاز بود\b/gi, " ")
+  }
+
+  if (productKind === "pod") {
+    withoutFillers = withoutFillers
+      .replace(/\bنكهة فيب\b/gi, " ")
+      .replace(/\bنكهات فيب\b/gi, " ")
+      .replace(/\bسائل إلكتروني\b/gi, " ")
+      .replace(/\bجهاز فيب\b/gi, " ")
+      .replace(/\bجهاز كامل\b/gi, " ")
+      .replace(/\bجهاز متكامل\b/gi, " ")
   }
 
   if (target === "description") {
@@ -1349,7 +1379,7 @@ const normalizeMetaTitleLength = (value: string, product: ProductRecord) => {
     productKind === "device"
       ? "جهاز فيب"
       : productKind === "pod"
-      ? "بود"
+      ? "بودات بديلة"
       : productKind === "coil"
       ? "كويل"
       : productKind === "salt-liquid"
@@ -1362,7 +1392,7 @@ const normalizeMetaTitleLength = (value: string, product: ProductRecord) => {
     productKind === "device"
       ? "أداء ثابت"
       : productKind === "pod"
-      ? "توافق ممتاز"
+      ? "توافق واضح"
       : productKind === "coil"
       ? "نكهة أوضح"
       : productKind === "salt-liquid"
@@ -1452,6 +1482,12 @@ const validateGeneratedSeoContent = (input: {
     }
   }
 
+  if (productKind === "pod") {
+    if (/(نكهة فيب|نكهات فيب|سائل إلكتروني|جهاز فيب|جهاز متكامل|نكهة غنية)/i.test(normalized)) {
+      throw new Error("Generated content described a pod product using liquid or full-device wording.")
+    }
+  }
+
   if (input.target === "description") {
     if (/Introduction\b/i.test(input.content)) {
       throw new Error("Generated description used English headings instead of the required Arabic structure.")
@@ -1493,6 +1529,20 @@ const getProviderApiKey = (settings: SeoAiSettings) => {
   }
 
   return settings.claude_api_key || normalizeText(process.env.CLAUDE_API_KEY)
+}
+
+const isRecoverableSeoValidationError = (message: string) => {
+  const normalized = normalizeText(message).toLowerCase()
+
+  return (
+    normalized.includes("generated meta title did not meet the required length") ||
+    normalized.includes("generated meta title must start from the actual arabic product name") ||
+    normalized.includes("generated meta description did not meet the required length") ||
+    normalized.includes("generated content described a liquid product as a device") ||
+    normalized.includes("generated content described a pod product using liquid or full-device wording") ||
+    normalized.includes("generated description used english headings instead of the required arabic structure") ||
+    normalized.includes("generated description did not follow the required arabic content structure")
+  )
 }
 
 const requestOpenAiCompatible = async (input: {
@@ -1615,94 +1665,111 @@ export const generateSeoFieldWithAI = async (input: {
   const temperature = input.target === "description" ? 0.9 : 0.7
   const model =
     normalizeText(aiSettings.model) || AI_PROVIDER_MODELS[aiSettings.provider][0]
-  const content =
+  const currentFieldValue = getCurrentFieldValue(input.product, input.target)
+  const productKind = inferSeoProductKind(input.product)
+  const allowedInternalLinks = buildInternalLinkCandidates(input.product)
+
+  const requestContentForPrompt = async (promptText: string) =>
     aiSettings.provider === "openai"
-      ? await requestOpenAiCompatible({
+      ? requestOpenAiCompatible({
           endpoint: "https://api.openai.com/v1/chat/completions",
           apiKey: providerApiKey,
           model,
-          prompt,
+          prompt: promptText,
           temperature,
           providerLabel: "OpenAI",
         })
       : aiSettings.provider === "deepseek"
-      ? await requestOpenAiCompatible({
+      ? requestOpenAiCompatible({
           endpoint: "https://api.deepseek.com/chat/completions",
           apiKey: providerApiKey,
           model,
-          prompt,
+          prompt: promptText,
           temperature,
           providerLabel: "DeepSeek",
         })
-      : await requestClaude({
+      : requestClaude({
           apiKey: providerApiKey,
           model,
-          prompt,
+          prompt: promptText,
           temperature,
         })
 
-  if (!content) {
-    throw new Error("AI provider returned an empty response.")
-  }
+  let lastError: Error | null = null
 
-  const parsed = parseJsonFromModelResponse(content)
-  const currentFieldValue = getCurrentFieldValue(input.product, input.target)
-  const normalizedContent =
-    input.target === "description"
-      ? (parsed.content || "").trim()
-      : normalizeText(parsed.content)
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const retrySuffix =
+      attempt === 0
+        ? ""
+        : "\nCRITICAL CORRECTION: Your previous output was rejected. Fix all violations completely. Respect the detected product kind exactly. Do not use wording from other product types. Keep only allowed internal links. Return valid JSON only."
 
-  if (!normalizedContent) {
-    throw new Error("Generated content was empty after normalization.")
-  }
+    const content = await requestContentForPrompt(`${prompt}${retrySuffix}`)
 
-  const finalContent =
-    input.target === "meta_title"
-      ? normalizeMetaTitleLength(
-          sanitizeGeneratedSeoOutput(
-            normalizedContent,
-            input.target,
-            inferSeoProductKind(input.product)
-          ),
-          input.product
-        )
-      : input.target === "meta_description"
-      ? normalizeMetaDescriptionLength(
-          sanitizeGeneratedSeoOutput(
-            normalizedContent,
-            input.target,
-            inferSeoProductKind(input.product)
-          ),
-          input.product
-        )
-      : enforceInternalLinksOnly(
-          sanitizeGeneratedSeoOutput(
-            normalizedContent,
-            input.target,
-            inferSeoProductKind(input.product)
+    if (!content) {
+      throw new Error("AI provider returned an empty response.")
+    }
+
+    const parsed = parseJsonFromModelResponse(content)
+    const normalizedContent =
+      input.target === "description"
+        ? (parsed.content || "").trim()
+        : normalizeText(parsed.content)
+
+    if (!normalizedContent) {
+      throw new Error("Generated content was empty after normalization.")
+    }
+
+    const finalContent =
+      input.target === "meta_title"
+        ? normalizeMetaTitleLength(
+            sanitizeGeneratedSeoOutput(normalizedContent, input.target, productKind),
+            input.product
           )
+        : input.target === "meta_description"
+        ? normalizeMetaDescriptionLength(
+            sanitizeGeneratedSeoOutput(normalizedContent, input.target, productKind),
+            input.product
+          )
+        : enforceInternalLinksOnly(
+            sanitizeGeneratedSeoOutput(normalizedContent, input.target, productKind),
+            allowedInternalLinks
+          )
+
+    try {
+      if (
+        input.target === "description" &&
+        normalizeText(stripHtml(finalContent)) ===
+          normalizeText(stripHtml(currentFieldValue))
+      ) {
+        throw new Error(
+          "Generated description matched the current description too closely. Try regenerating."
         )
+      }
 
-  if (
-    input.target === "description" &&
-    normalizeText(stripHtml(finalContent)) ===
-      normalizeText(stripHtml(currentFieldValue))
-  ) {
-    throw new Error(
-      "Generated description matched the current description too closely. Try regenerating."
-    )
+      validateGeneratedSeoContent({
+        product: input.product,
+        target: input.target,
+        content: finalContent,
+      })
+
+      return {
+        content: finalContent,
+        reasoning: normalizeText(parsed.reasoning),
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Generated content failed validation."
+
+      if (attempt === 0 && isRecoverableSeoValidationError(message)) {
+        lastError = error instanceof Error ? error : new Error(message)
+        continue
+      }
+
+      throw error
+    }
   }
 
-  validateGeneratedSeoContent({
-    product: input.product,
-    target: input.target,
-    content: finalContent,
-  })
-
-  return {
-    content: finalContent,
-    reasoning: normalizeText(parsed.reasoning),
-  }
+  throw lastError || new Error("Generated content failed validation.")
 }
 
 export const generateSeoFieldWithOpenAI = async (input: {

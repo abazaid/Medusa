@@ -446,7 +446,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       normalized.includes("invalid seo target") ? 400 :
       normalized.includes("required") ||
       normalized.includes("no saudi competitor results") ||
-      normalized.includes("could not build a search query")
+      normalized.includes("could not build a search query") ||
+      normalized.includes("generated meta title") ||
+      normalized.includes("generated meta description") ||
+      normalized.includes("generated content described a liquid product as a device") ||
+      normalized.includes("generated content described a pod product using liquid or full-device wording") ||
+      normalized.includes("generated description used english headings") ||
+      normalized.includes("generated description did not follow the required arabic content structure")
         ? 400
         : 500
 
