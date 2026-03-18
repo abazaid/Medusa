@@ -169,6 +169,8 @@ const revalidateStorefrontSeo = async (product: ProductRecord) => {
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
+  const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER)
+
   try {
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
     const productModuleService = req.scope.resolve(Modules.PRODUCT)
@@ -447,6 +449,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       normalized.includes("could not build a search query")
         ? 400
         : 500
+
+    logger.warn(
+      `[seo-generate] product=${req.params.productId || "unknown"} target=${
+        typeof (req.body as any)?.target === "string" ? (req.body as any).target : "unknown"
+      } status=${statusCode} message=${message}`
+    )
 
     res.status(statusCode).json({ message })
   }
