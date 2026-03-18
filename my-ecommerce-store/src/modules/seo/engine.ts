@@ -1320,6 +1320,107 @@ const sanitizeGeneratedSeoOutput = (
   return normalizeText(withoutFillers)
 }
 
+const ensureMetaTitleStartsWithProductName = (
+  value: string,
+  product: ProductRecord
+) => {
+  const productName = normalizeText(buildArabicSearchName(product))
+  const normalized = normalizeText(value)
+
+  if (!productName) {
+    return normalized
+  }
+
+  if (normalized.startsWith(productName)) {
+    return normalized
+  }
+
+  const remainder = normalizeText(
+    normalized.replace(new RegExp(productName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), " ")
+  )
+
+  return normalizeText([productName, remainder].filter(Boolean).join(" "))
+}
+
+const normalizeMetaTitleLength = (value: string, product: ProductRecord) => {
+  const productName = normalizeText(buildArabicSearchName(product))
+  const productKind = inferSeoProductKind(product)
+  const categoryLabel =
+    productKind === "device"
+      ? "جهاز فيب"
+      : productKind === "pod"
+      ? "بود"
+      : productKind === "coil"
+      ? "كويل"
+      : productKind === "salt-liquid"
+      ? "نكهة سولت"
+      : productKind === "freebase-liquid"
+      ? "نكهة فيب"
+      : ""
+
+  const benefitLabel =
+    productKind === "device"
+      ? "أداء ثابت"
+      : productKind === "pod"
+      ? "توافق ممتاز"
+      : productKind === "coil"
+      ? "نكهة أوضح"
+      : productKind === "salt-liquid"
+      ? "سحب سلس"
+      : productKind === "freebase-liquid"
+      ? "نكهة غنية"
+      : "اختيار مناسب"
+
+  let normalized = ensureMetaTitleStartsWithProductName(value, product)
+
+  if (normalized.length < 45) {
+    normalized = normalizeText(
+      [normalized, categoryLabel, benefitLabel].filter(Boolean).join(" ")
+    )
+  }
+
+  if (normalized.length > 60 && productName) {
+    const compact = normalizeText(
+      [productName, categoryLabel, benefitLabel].filter(Boolean).join(" ")
+    )
+
+    if (compact.length >= 45 && compact.length <= 60) {
+      return compact
+    }
+  }
+
+  if (normalized.length > 60) {
+    normalized = truncate(normalized, 60)
+  }
+
+  return normalized
+}
+
+const normalizeMetaDescriptionLength = (value: string, product: ProductRecord) => {
+  const productName = normalizeText(buildArabicSearchName(product))
+  let normalized = normalizeText(value)
+
+  if (normalized.length > 155) {
+    normalized = truncate(normalized, 155)
+  }
+
+  if (normalized.length < 140 && productName && !normalized.includes(productName)) {
+    normalized = normalizeText(`${productName} ${normalized}`)
+  }
+
+  if (normalized.length < 140) {
+    normalized = normalizeText(
+      `${normalized} منتج أصلي يوفر تجربة استخدام موثوقة وجودة مناسبة للشراء من متجرنا.`
+    )
+  }
+
+  if (normalized.length > 155) {
+    normalized = truncate(normalized, 155)
+  }
+
+  return normalized
+}
+
 const validateGeneratedSeoContent = (input: {
   product: ProductRecord
   target: SeoFieldTarget
@@ -1557,22 +1658,22 @@ export const generateSeoFieldWithAI = async (input: {
 
   const finalContent =
     input.target === "meta_title"
-      ? truncate(
+      ? normalizeMetaTitleLength(
           sanitizeGeneratedSeoOutput(
             normalizedContent,
             input.target,
             inferSeoProductKind(input.product)
           ),
-          60
+          input.product
         )
       : input.target === "meta_description"
-      ? truncate(
+      ? normalizeMetaDescriptionLength(
           sanitizeGeneratedSeoOutput(
             normalizedContent,
             input.target,
             inferSeoProductKind(input.product)
           ),
-          160
+          input.product
         )
       : enforceInternalLinksOnly(
           sanitizeGeneratedSeoOutput(
