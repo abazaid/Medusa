@@ -6,6 +6,7 @@ import {
   DEFAULT_SEO_PROMPT_SETTINGS,
   SeoFieldTarget,
   buildSearchQuery,
+  buildSearchQueries,
   getCompetitorProductInsights,
   generateSeoFieldWithAI,
 } from "../../../../../modules/seo/engine"
@@ -314,16 +315,26 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       ((store as any)?.metadata as Record<string, unknown> | null) || null
     const settings = pickSettings(storeMetadata)
     const aiSettings = pickAiSettings(storeMetadata)
-    const searchQuery = buildSearchQuery(product)
+    const searchQueries = buildSearchQueries(product)
+    const searchQuery = searchQueries[0] || buildSearchQuery(product)
 
-    if (!searchQuery) {
+    if (!searchQuery || !searchQueries.length) {
       res
         .status(400)
         .json({ message: "Could not build a search query for this product." })
       return
     }
+    let competitorInsights = await getCompetitorProductInsights(searchQuery)
 
-    const competitorInsights = await getCompetitorProductInsights(searchQuery)
+    if (!competitorInsights.results.length && searchQueries.length > 1) {
+      for (const fallbackQuery of searchQueries.slice(1)) {
+        const fallbackInsights = await getCompetitorProductInsights(fallbackQuery)
+        if (fallbackInsights.results.length) {
+          competitorInsights = fallbackInsights
+          break
+        }
+      }
+    }
     const topResults = competitorInsights.results.map((result) => ({
       title: result.title,
       snippet: result.google_snippet,
@@ -336,7 +347,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }))
 
     if (!topResults.length) {
-      res.status(400).json({ message: "No Saudi competitor results were found." })
+      res.status(400).json({
+        message: `No Saudi competitor results were found for queries: ${searchQueries.join(" | ")}`,
+      })
       return
     }
 

@@ -543,6 +543,20 @@ export const buildSearchQuery = (product: ProductRecord) => {
   return buildArabicSearchName(product)
 }
 
+export const buildSearchQueries = (product: ProductRecord) => {
+  const arabicOnly = buildArabicSearchName(product)
+  const seoName = buildSeoProductName(product)
+  const cleanedTitle = stripTitleMeasurements(cleanGenericSeoFillers(product.title))
+  const normalizedTitle = normalizeText(product.title)
+
+  return uniqueByNormalize([
+    arabicOnly,
+    seoName,
+    cleanedTitle,
+    normalizedTitle,
+  ]).filter(Boolean)
+}
+
 const getStorefrontBaseUrl = () => {
   const explicit =
     normalizeText(process.env.STOREFRONT_BASE_URL) ||
