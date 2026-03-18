@@ -1337,11 +1337,25 @@ const sanitizeGeneratedSeoOutput = (
     withoutFillers = withoutFillers
       .replace(/\bنكهة فيب\b/gi, " ")
       .replace(/\bنكهات فيب\b/gi, " ")
+      .replace(/\bنكهة غنية\b/gi, " ")
       .replace(/\bسائل إلكتروني\b/gi, " ")
       .replace(/\bجهاز فيب\b/gi, " ")
       .replace(/\bجهاز كامل\b/gi, " ")
       .replace(/\bجهاز متكامل\b/gi, " ")
+      .replace(/\bسحب سلس\b/gi, " ")
   }
+
+  if (productKind === "salt-liquid" || productKind === "freebase-liquid") {
+    withoutFillers = withoutFillers
+      .replace(/\bخيار(?:اً|ًا)? صح(?:ي|ياً)\b/gi, " ")
+      .replace(/\bخيار صحي\b/gi, " ")
+      .replace(/\bأقل ضرر(?:اً|ًا)?\b/gi, " ")
+      .replace(/\bآمن(?:ة)?\b/gi, " ")
+  }
+
+  withoutFillers = withoutFillers
+    .replace(/(\b[\u0600-\u06FFA-Za-z0-9]+\s+[\u0600-\u06FFA-Za-z0-9]+\b)(?:\s+\1)+/gi, "$1")
+    .replace(/(\b[\u0600-\u06FFA-Za-z0-9]+\b)(?:\s+\1){1,}/gi, "$1")
 
   if (target === "description") {
     return withoutFillers.replace(/\s{2,}/g, " ").trim()
@@ -1486,6 +1500,16 @@ const validateGeneratedSeoContent = (input: {
     if (/(نكهة فيب|نكهات فيب|سائل إلكتروني|جهاز فيب|جهاز متكامل|نكهة غنية)/i.test(normalized)) {
       throw new Error("Generated content described a pod product using liquid or full-device wording.")
     }
+  }
+
+  if (productKind === "salt-liquid" || productKind === "freebase-liquid") {
+    if (/(خيار صحي|أقل ضرر|آمنة|آمن)/i.test(normalized)) {
+      throw new Error("Generated content included unsupported health or safety claims.")
+    }
+  }
+
+  if (/(\b[\u0600-\u06FFA-Za-z0-9]+\s+[\u0600-\u06FFA-Za-z0-9]+\b)(?:\s+\1)+/i.test(normalized)) {
+    throw new Error("Generated content repeated the same phrase too many times.")
   }
 
   if (input.target === "description") {
